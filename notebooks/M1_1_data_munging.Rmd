@@ -269,12 +269,17 @@ m[2,]   # The whole second row of m as a vector
 m[,2]   # The whole second column of m as a vector
 m[1:2,4:6] # submatrix: rows 1 and 2, columns 4, 5 and 6
 m[-1,]     # all rows *except* the first one
+```
 
+Conditional operations
+```{r}
 m[1,]==m[,1]  # Are elements in row 1 equivalent to corresponding elements from column 1? 
 m>3           # A logical matrix: TRUE for m elements >3, FALSE otherwise
 m[m>3]        # Selects only TRUE elements - that is ones greater than 3
+```
 
-
+Other matrix manipulation
+```{r}
 t(m)          # Transpose m     
 m <- t(m)     # Assign m the transposed m
 m %*% t(m)    # %*% does matrix multiplication
@@ -290,6 +295,11 @@ Created with the `array()` function:
 a <- array(data=1:18,dim=c(3,3,2)) # 3d with dimensions 3x3x2
 a <- array(1:18,c(3,3,2))          # the same array
 a
+```
+
+Since arrays have 2 dimensions, also a 3rd element can be used for slicing&dicinhg.
+```{r}
+a[1,3,2]
 ```
 
 
@@ -407,12 +417,10 @@ For more advanced troubleshooting, check out `try()`, `tryCatch()`, and `debug()
 ```
 
 Generally, just using `?functionyouwonderabout` often solves problems. There you can review the functions arguments, inputs, outputs, syntax etc.
-```{r}
-?merge
-```
 
 # R 2.0: The Tidyverse
 
+## What is it all about?
 Base `R` comes with quite some functionality for slicing and dicing data, there also exists a myriad specialized packages for more tricky data manipulation. To read others' code and example as well as to perform some special operations, you all should be able to use standard `R` syntax. 
 
 However, the factors, the `[row, column]` syntax anhd so forth are not very comfortable and intuitive. Further, for more tricky operation such as certain aggregations etc., one has to rely on a variety of packages, which often come with an own syntax.
@@ -433,11 +441,6 @@ I will not touch on all packages there, but the complete `tidyverse` covers almo
 1: Is there a way to solve my problem in `dplyr`?
 2: If not, is there another `tidyverse` package dedicated to this problem?
 
-## General syntax
-So, let's zoom in the `dplyr` functionality and syntax for a moment, before we illustrate it at the following data-manipulation tasks.
-
-dplyr is designed to abstract over how the data is stored. That means as well as working with local data frames, you can also work with remote database tables, using exactly the same `R` code. Install the `dbplyr` package then read `vignette("databases", package = "dbplyr")`.
-
 For the sake of illustration, I will load every package of the `tidyverse` one-by-one when we need it. However, normally I just load `library(tidyverse)` all at once, since I need a lot of these packages often anyhow
 
 ```{r,warning=FALSE}
@@ -445,7 +448,7 @@ library(tidyverse) # To load the whole compilation of packages
 ```
 
 
-### Piping in `dplyr`
+## Piping in `dplyr`
 
 ![Cleaning](https://www.dropbox.com/s/13okk1po1gqae6b/pipe.jpg?dl=1)
 
@@ -462,6 +465,7 @@ x
 ```
 
 It basically reads like: 
+
 * Create a dataframe (to be precise, a `tibble`) with the variable "numbers" and assign the values 1:5.
 * THEN multiply them with 2.
 : THEN subset the dataframe to only rows with a nuimber value higher than 4.
@@ -469,6 +473,7 @@ It basically reads like:
 It first looks not so intuitive, but it will become your second nature. Using pipes facilitates fast, reproducible and easily readable coding practices, and all of you are encouraged to go on with that.
 
 **Note:** `%>%` pipes do not autometically assign their output to the left-hand side object, meaning the original dataset will not per se be overwritten. To do that, there are two ways:
+
 1: Initially, assign the output to the original data with `<-`
 2: Initially, use `margrittr`'s `%<>%` command, meaning: Assign and pipe.
 
@@ -497,7 +502,9 @@ x %<>% fun(y)
 x <- fun(x, y)
 ```
 
-### The 5 core verbs of data-manipulation
+## The 5 core verbs of data-manipulation
+So, let's zoom in the `dplyr` functionality and syntax for a moment, before we illustrate it at the following data-manipulation tasks.
+
 At ity's core are 5 central verbs of data/manipulation, which are
 
 1. `filter()` picks cases based on their values.
@@ -508,13 +515,13 @@ At ity's core are 5 central verbs of data/manipulation, which are
 
 These all combine naturally with `group_by()` which allows you to perform any operation "by group". You can learn more about them in `vignette("dplyr")`. As well as these single-table verbs, dplyr also provides a variety of two-table verbs (joins and mutations), which you can learn about in `vignette("two-table")`.
 
-We will explore now a bit with the starwars dataset, which comes together with `dplyr`. First, let's get an intuition what's in it. 
+We will explore now a bit with the starwars dataset, which comes together with `dplyr`. First, let's get an intuition what's in it. `head()` shows us the first 10 rows.
 
 ```{r}
 starwars %>% head() # The "startwars" dataset is an integrated dplyr goddie :)
 ```
 
-
+`glimpse()` gives us anh overview over all variable types.
 
 ```{r}
 starwars %>% glimpse()
@@ -522,73 +529,78 @@ starwars %>% glimpse()
 
 
 
-#### 1: `filter()`
+### 1: `filter()`
 The verb `filter()` lets you subset a dataframe by rows (observations), meaning the output will filter for only rows which fulfill a certain condition.
 
-![Filter](media/m1_dplyr_filter.png)
+![Filter](https://www.dropbox.com/s/bmonr9ulkd9v5tf/dplyr_filter.png?dl=1)
 
 ```{r}
 starwars %>% 
   filter(species == "Droid")
 ```
 
-Conditions can be logically combined with boolean operators (`&, |`)
+Conditions can be combined with boolean operators (`&, |`)
 
 ```{r}
 starwars %>% 
   filter(homeworld == "Tatooine" & species == "Droid")
 ```
 
-#### 2: `select()`
+### 2: `select()`
 The verb `select()` lets you subset a dataframe by column (variable), meaning the output will only contain certain columns in the stated order
 
 ```{r}
 starwars %>% 
-  select(name, homeworld)
+  select(name, homeworld) %>%
+  head(10) 
 ```
 
 It can also be used to deselect columns with a leading `-`
 
 ```{r}
 starwars %>% 
-  select(-birth_year, -skin_color) 
+  select(-birth_year, -skin_color) %>%
+  head(10) 
 ```
 
-Lastly, many of `dplyr`'s other conditions can be applied to select or deselect columns. More on that later.
+Lastly, many of `dplyr`'s other conditions and helper functions can be applied to select or deselect columns. More on that later.
 
 ```{r}
 starwars %>% 
-  select(name, ends_with("color")) 
+  select(name, ends_with("color")) %>%
+  head(10) 
 ```
 
-#### 3: `arrange()`
+### 3: `arrange()`
 The verb `arrange()` defines the way the rows of your dataframe are ordered
 
-![Arrange](media/m1_dplyr_arrange.png)
+![Arrange](https://www.dropbox.com/s/edoturkaj9oduyl/dplyr_arrange.png?dl=1)
 
 ```{r}
 starwars %>% 
-  arrange(homeworld, desc(mass))
+  arrange(homeworld, desc(mass)) %>% # Note: desc() witll order it descending, so the heaviest one first.
+  head(10) 
 ```
 
-#### 4: `mutate()`
+### 4: `mutate()`
 The verb `mutate()` lets you manipulate existing variables or create new ones.
 
-![Mutate](media/m1_dplyr_mutate.png)
+![Mutate](https://www.dropbox.com/s/w19b5mhpv603tg0/dplyr_mutate.png?dl=1)
 
 ```{r}
 starwars %>% 
-  mutate(bmi = mass / ((height / 100)  ^ 2),
+  mutate(bmi = mass / ((height / 100)  ^ 2), # If you didnt know how to calculate the BMI, now you do...
          mass.rel = mass / max(mass, na.rm = TRUE)) %>%
   select(name:mass, mass.rel, bmi) %>%
-  arrange(desc(bmi))
+  arrange(desc(bmi)) %>%
+  head(10) 
 ```
 
 
-#### 5: `summarize()`
+### 5: `summarize()`
 The verb `summarize()` reduces your dataset to one observation, which is summarized according to a defined function.
 
-![Summarize](media/m1_dplyr_summarize.png)
+![Summarize](https://www.dropbox.com/s/2pb07846mzg1huo/dplyr_summarize.png?dl=1)
 
 ```{r}
 starwars %>% 
@@ -599,10 +611,10 @@ starwars %>%
 ```
 
 
-#### Doing manipulation by group: `group_by`
+### Doing manipulation by group: `group_by`
 Finally, `by_group()` is offers the perfect complement to the 5 basic verbs, since it allows to perform aqll the above mentioned tasks sepperate according to used-defined groupings in one or multiple categories. Lets look at some examples:
 
-![Group](media/m1_dplyr_group.png)
+![Group](https://www.dropbox.com/s/lpuoesmr9hqwfdg/dplyr_group.png?dl=1)
 
 First of all, it works amazingly well with the `summarize()` verb, producing within group summaries
 
@@ -616,11 +628,11 @@ starwars %>%
 
 Note that it is adviced to finish always such operations with `ungroup()`. Otherwise, the still active grouping might at a later point lead to all kind of unforseen results.
 
-### Your turn
+## Your turn
 
-Some little exercises in between: Lets go to this [Kaggle notebook exercise](https://www.kaggle.com/danielhain/sds-2018-m1-2-data-munging-exercise-1) and show what you learned
+Some little exercises in between: Lets go to this [funh exercise on colab](https://colab.research.google.com/drive/1G2pr-SJA5V7QWhMt5fStmlDGU7i2ZUFs), and show what you learned!
 
-##### Two-table verbs
+## Two-table verbs
 It's rare that a data analysis involves only a single table of data. In practice, you'll normally have many tables that contribute to an analysis, and you need flexible tools to combine them. In `dplyr`, there are three families of verbs that work with two tables at a time:
 
 1. Mutating joins, which add new variables to one table from matching rows in another.

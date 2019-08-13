@@ -1,48 +1,36 @@
 ---
-title: 'M1-2: Data Munging'
+title: 'M1: Data Munging (in R)'
 author: "Daniel S. Hain (dsh@business.aau.dk)"
-date: "06/09/2018"
 output:
   html_document:
     df_print: paged
-    toc: yes
-    toc_float: true
     number_sections: yes
+    toc: yes
+    toc_float: yes
 ---
 
 ```{r setup, include=FALSE}
 ### Generic preamble
 Sys.setenv(LANG = "en")
+options(scipen = 5)
+set.seed(1337)
 
-### Clean Workspace (I like to start clean)
 rm(list=ls()); graphics.off() # get rid of everything in the workspace
-detachAllPackages <- function() { # Also, detach packages to avoid functions masked by others
-  basic.packages <- c("package:stats","package:graphics","package:grDevices","package:utils","package:datasets","package:methods","package:base")
-  package.list <- search()[ifelse(unlist(gregexpr("package:",search()))==1,TRUE,FALSE)]
-  package.list <- setdiff(package.list,basic.packages)
-  if (length(package.list)>0)  for (package in package.list) detach(package, character.only=TRUE)
-}
-detachAllPackages(); rm(detachAllPackages)
-
-### checking if all we need is installed
-list.of.packages <- c("knitr", "tidyverse", "magrittr", "data.table", "skimr")
-
-new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages)) install.packages(new.packages)
-rm(list.of.packages, new.packages)
-
-### Load packages  Standard
 library(knitr) # For display of the markdown
-library(tidyverse) # Collection of all the good stuff like dplyr, ggplot2 ect.
-library(magrittr) # For extra-piping operators (eg. %<>%)
-library(data.table) # Good format to work with large datasets
-library(skimr) # Nice descriptives
-
+if (!require("pacman")) install.packages("pacman") # package for loading and checking packages :)
 
 ### Knitr options
-opts_chunk$set(warning=FALSE,
-               message=FALSE,
-               fig.align="center"
+knitr::opts_chunk$set(warning=FALSE,
+                     message=FALSE,
+                     fig.align="center"
+                     )
+```
+
+
+```{r}
+### Install packages if necessary
+pacman::p_load(tidyverse, # Collection of all the good stuff like dplyr, ggplot2 ect.
+               magrittr # For extra-piping operators (eg. %<>%)
                )
 ```
 
@@ -67,16 +55,13 @@ In this session, you will learn:
 
 From my experience, this covers ca. 95% of common data manipulation tasks. Sound like fun? Lets get started!
 
-# Before we start: Some digression on data manipulation workflows 
+# Reminder: Base-R
 
-## Reminder: Base-R
+## Basics 
 
-### Basics 
-
-#### Assignments 
+### Assignments 
  
 You can assign a value to an object using `assign()`,  `<-`, or `=`.
-
 ```{r}
 x <- 3         # Assignment
 x              # Evaluate the expression and print result
@@ -92,10 +77,9 @@ rm(z)          # Remove z: deletes the object.
 ```
 
 
-#### Value comparisons 
+### Value comparisons 
 
-Comparisons return boolean values: TRUE or FALSE (often abbreviated to T and F)
-
+Comparisons return boolean values: TRUE or FALSE (often abbreviated to `T` and `F`)
 ```{r}
 2==2  # Equality
 2!=2  # Inequality
@@ -103,16 +87,19 @@ x <= y # less than or equal: "<", ">", and ">=" also work
 ```
 
 
-#### Special constants  
+#### Special constants: `NA`, `NULL`, `Inf`, `-Inf`, `NaN`
 
-NA, NULL, Inf, -Inf, NaN
-
+`NA` indicates missing or undefined data
 ```{r}
-# NA - missing or undefined data
 5 + NA      # When used in an expression, the result is generally NA
 is.na(5+NA) # Check if missing
 
-# NULL - an empty object, e.g. a null/empty list
+mean(c(1, 2, NA, 4, 5)) # many functions requiring numeric vectors output  when one is included
+mean(c(1, 2, NA, 4, 5), na.rm = TRUE) # Not if we provide the right argument to ignore them
+```
+
+`NULL` indicates an empty object, e.g. a null/empty list
+```{r}
 10 + NULL     # use returns an empty object (length zero)
 is.null(NULL) # check if NULL
 
@@ -127,25 +114,40 @@ is.finite(5/0) # Check if a number is finite
 is.nan(0/0)
 ```
 
+`Inf` and `-Inf` represent positive and negative infinity. They can be returned by  mathematical operations like division of a number by zero.
+```{r}
+5/0
+is.finite(5/0) # Check if a number is finite
+```
 
-### Object classes
+`NaN` (Not a Number) - the result of an operation that cannot be reasonably defined 
+```{r}
+0/0
+is.nan(0/0)
+```
 
-#### Vectors
+## Object classes
+
+### Vectors
 
 ```{r}
 v1 <- c(1, 5, 11, 33)       # Numeric vector, length 4
+v1
+
 v2 <- c("hello","world")    # Character vector, length 2 (a vector of strings)
+v2
+
 v3 <- c(TRUE, TRUE, FALSE)  # Logical vector, same as c(T, T, F)
+v3
 ```
 
 Combining different types of elements in one vector will coerce the elements  to the least restrictive type:
-
 ```{r}
 v4 <- c(v1,v2,v3,"boo") 	# All elements turn into strings
+v4
 ```
 
 Other ways to create vectors:
-
 ```{r}
 v <- 1:7         # same as c(1,2,3,4,5,6,7)  
 v <- rep(0, 77)  # repeat zero 77 times: v is a vector of 77 zeroes
@@ -160,17 +162,14 @@ v2 <- rep(1,5)    # 1,1,1,1,1
 ```
 
 Element-wise operations:
-
 ```{r}
 v1 + v2      # Element-wise addition
 v1 + 1       # Add 1 to each element
 v1 * 2       # Multiply each element by 2
-v1 + c(1,7)  # This doesn't work: (1,7) is a vector of different length
+v1 + c(1,7)  # (1,7) is a vector of different length... what happens here?
 ```
 
-
 Mathematical operations:
-
 ```{r}
 sum(v1)      # The sum of all elements
 mean(v1)     # The average of all elements
@@ -179,7 +178,6 @@ cor(v1,v1*5) # Correlation between v1 and v1*5
 ```
 
 Logical operations:
-
 ```{r}
 v1 > 2       # Each element is compared to 2, returns logical vector
 v1==v2       # Are corresponding elements equivalent, returns logical vector.
@@ -190,8 +188,7 @@ v1!=v2       # Are corresponding elements *not* equivalent? Same as !(v1==v2)
 (v1>2) && (v2>0)  # && is the boolean AND, ditto
 ```
 
-Vector elements:
-
+Adressing vector elements:
 ```{r}
 v1[3]             # third element of v1
 v1[2:4]           # elements 2, 3, 4 of v1
@@ -200,26 +197,25 @@ v1[c(T,T,F,F,F)]  # elements 1 and 2 - only the ones that are TRUE
 v1[v1>3]          # v1>3 is a logical vector TRUE for elements >3
 ```
 
-**NOTE:** If you are used to languages indexing from 0, R will surprise you by indexing from 1.
+**NOTE:** If you are used to languages indexing from 0 (eg. Python), `R` will surprise you by indexing from 1.
 
 To add more elements to a vector, simply assign them values.
-
 ```{r}
 v1[6:10] <- 6:10
+v1
 ```
 
 We can also directly assign the vector a length:
-
 ```{r}
 length(v1) <- 15 # the last 5 elements are added as missing data: NA
+v1
 ```
 
 
 
-#### Factors --------
+### Factors
 
 Factors are used to store categorical data.
-
 ```{r}
 eye.col.v <- c("brown", "green", "brown", "blue", "blue", "blue")         #vector
 eye.col.f <- factor(c("brown", "green", "brown", "blue", "blue", "blue")) #factor
@@ -227,7 +223,7 @@ eye.col.v
 eye.col.f
 ```
 
-R will identify the different levels of the factor - e.g. all distinct values. The data is stored internally as integers - each number corresponding to a factor level.
+`R` will identify the different levels of the factor - e.g. all distinct values. The data is stored internally as integers - each number corresponding to a factor level.
 
 ```{r}
 levels(eye.col.f)  # The levels (distinct values) of the factor (categorical variable)
@@ -240,21 +236,21 @@ as.character(eye.col.v)
 ```
 
 
-#### Matrces & Arrays 
+### Matrces & Arrays 
 
 A matrix is a vector with dimensions:
-
 ```{r}
 m <- rep(1, 20)   # A vector of 20 elements, all 1
 dim(m) <- c(5,4)  # Dimensions set to 5 & 4, so m is now a 5x4 matrix
+m
 ```
 
 Create a matrix using `matrix()`:
-
 ```{r}
 m <- matrix(data=1, nrow=5, ncol=4)  # same matrix as above, 5x4, full of 1s
 m <- matrix(1,5,4) 			             # same matrix as above
 dim(m)                                # What are the dimensions of m?
+m
 ```
 
 Create a matrix by combining vectors:
@@ -263,10 +259,10 @@ Create a matrix by combining vectors:
 m <- cbind(1:5, 5:1, 5:9)  # Bind 3 vectors as columns, 5x3 matrix
 m <- rbind(1:5, 5:1, 5:9)  # Bind 3 vectors as rows, 3x5 matrix
 m <- matrix(1:10,10,10)
+m
 ```
 
 Select matrix elements: 
-
 ```{r}
 m[2,3]  # Matrix m, row 2, column 3 - a single cell
 m[2,]   # The whole second row of m as a vector
@@ -290,14 +286,14 @@ m * m         # * does element-wise multiplication
 #### Arrays: more than 2 dimensions
 
 Created with the `array()` function:
-
 ```{r}
 a <- array(data=1:18,dim=c(3,3,2)) # 3d with dimensions 3x3x2
 a <- array(1:18,c(3,3,2))          # the same array
+a
 ```
 
 
-#### Lists  
+### Lists  
 
 Lists are collections of objects (e.g. of strings, vectors, matrices, other lists, etc.)
 
@@ -315,7 +311,6 @@ l1$boo         # Named elements can be accessed using the $ operator - equivalen
 ```
 
 Add more elements to a list:
-
 ```{r}
 l3[[1]] <- 11 # add an element to the empty list l3
 l4[[3]] <- c(22, 23) # add a vector as element 3 in the empty list l4. 
@@ -326,31 +321,23 @@ l1$Something <- "A thing"  # Adds a ninth element - "A thing", named "Something"
 ```
 
 
-
-#### Data Frames  
+### Data Frames  
 
 The data frame is a special kind of list used for storing dataset tables. Think of rows as cases, columns as variables. Each column is a vector or factor.
 
 Creating a dataframe:
-
 ```{r}
 dfr1 <- data.frame( ID=1:4,
-                    FirstName=c("John","Jim","Jane","Jill"),
+                    FirstName=c("Jesper","Jonas","Pernille","Helle"),
                     Female=c(F,F,T,T), 
                     Age=c(22,33,44,55) )
 
 dfr1$FirstName   # Access the second column of dfr1. 
 ```
 
-Notice that R thinks this is a categorical variable  and so it's treating it like a factor, not a character vector.
+**Notice** that `R` thinks this is a categorical variable  and so it's treating it like a factor, not a character vector.
 
-Let's get rid of the factor by telling R to treat FirstName as a vector:
-
-```{r}
-dfr1$FirstName <- as.vector(dfr1$FirstName)
-```
-
-Alternatively, you can tell R you don't like factors from the start using `stringsAsFactors=FALSE`
+You can tell R you don't like factors from the start using `stringsAsFactors=FALSE`. I find that annoying. The `tibble` (introduced later) does not do that.
 
 ```{r}
 dfr2 <- data.frame(FirstName=c("John","Jim","Jane","Jill"), stringsAsFactors=FALSE)
@@ -358,7 +345,6 @@ dfr2$FirstName   # Success: not a factor.
 ```
 
 Access elements of the data frame
-
 ```{r}
 dfr1[1,]   # First row, all columns
 dfr1[,1]   # First column, all rows
@@ -368,63 +354,47 @@ dfr1[c(1,3),] # Rows 1 and 3, all columns
 ```
 
 Find the names of everyone over the age of 30 in the data
-
 ```{r}
 dfr1[dfr1$Age>30,2]
 ```
 
 Find the average age of all females in the data:
-
 ```{r}
-mean ( dfr1[dfr1$Female==TRUE,4] )
+mean (dfr1[dfr1$Female==TRUE,4])
 ```
 
 
 ### Flow Control (loops & friends)
 
-`if (condition) expr1 else expr2`
-
+If statements: `if (condition) expr1 else expr2`
 ```{r}
 x <- 5; y <- 10
 if (x==0) y <- 0 else y <- y/x  
 y
 ```
 
-
-`for (variable in sequence) expr`
-
+for loops: `for (variable in sequence) expr`
 ```{r}
-ASum <- 0; AProd <- 1
-for (i in 1:x)  
-{
-  ASum <- ASum + i
-  AProd <- AProd * i
-}
-ASum  # equivalent to sum(1:x)
-AProd # equivalemt to prod(1:x)
+for (i in 1:x)  { print(paste("OMG, i just counted to", i)) }
 ```
 
-
-
-`while (condintion) expr`
-
+While loop: `while (condintion) expr`
 ```{r}
 while (x > 0) {print(x); x <- x-1;}
 ```
 
-`repeat expr, use break to exit the loop`
-
+Repeat loop: `repeat expr, use break to exit the loop`
 ```{r}
 repeat { print(x); x <- x+1; if (x>10) break}
 ```
 
-### R troubleshooting 
+## R troubleshooting 
 
 While I generate many (and often very creative) errors in R, there are three simple things that will most often go wrong for me. Those include: 
 
 * Capitalization. R is case sensitive - a graph vertex named "Jack" is not the same as one named "jack". The function `rowSums` won't work as "rowsums" or "RowSums".
 * Object class. While many functions are willing to take anything you throw at them, some will still surprisingly require character vector or a factor instead of a numeric vector, or a matrix instead of a data frame. Functions will also occasionally return results in an unexpected format.
-* Package namespaces. Occasionally problems will arise when different packages contain functions with the same name. R may warn you about this by saying something like "The following object(s) are masked from 'package:igraph'" as you load a package. One way to deal with this is to call functions from a package explicitly using '::'. For instance, if function 'blah' is present in packages A and B, you can call A::blah and B::blah. In other cases the problem is more complicated, and you may have to load packages in certain order, or not use them together at all. For example (and pertinent to this workshop), igraph and statnet packages can cause some problems when loaded at the same time. It is best to detach one before loading the other.
+* Package namespaces. Occasionally problems will arise when different packages contain functions with the same name. R may warn you about this by saying something like "The following object(s) are masked from 'package:igraph'" as you load a package. One way to deal with this is to call functions from a package explicitly using '::'. For instance, if function 'blah' is present in packages A and B, you can call A::blah
 
 ```{r}
 # library(dplyr)          # load a package
@@ -432,53 +402,26 @@ While I generate many (and often very creative) errors in R, there are three sim
 ```
 
 For more advanced troubleshooting, check out `try()`, `tryCatch()`, and `debug()`. 
-
 ```{r}
 ?tryCatch
 ```
 
 Generally, just using `?functionyouwonderabout` often solves problems. There you can review the functions arguments, inputs, outputs, syntax etc.
-
 ```{r}
 ?merge
 ```
 
+# R 2.0: The Tidyverse
 
-# Introducing [`dplyr`](https://dplyr.tidyverse.org/) workflows
+Base `R` comes with quite some functionality for slicing and dicing data, there also exists a myriad specialized packages for more tricky data manipulation. To read others' code and example as well as to perform some special operations, you all should be able to use standard `R` syntax. 
 
-Base R comes with quite some functionality for slicing and dicing data, there also exists a myriad specialized packages for more tricky data manipulation. To read others' code and example as well as to perform some special operations, you all should be able to use standard R syntax. Lets create a super-simple dataframe and slice it a bit. Lets imagine we have 10 persons with a corresponging numeric id, and some value, such as an IQ score. Soem are members of group A, and some of group B or C. We generate that all somnewhat random:
+However, the factors, the `[row, column]` syntax anhd so forth are not very comfortable and intuitive. Further, for more tricky operation such as certain aggregations etc., one has to rely on a variety of packages, which often come with an own syntax.
 
-```{r}
-x <- data.frame(id = 1:10, 
-                group = sample(LETTERS[1:3], 10, replace = TRUE),
-                score = rnorm(10, mean = 0, sd = 1) )
-x
-```
-
-Now, lets imaging we would like to sort, subset or aggregate it, we would do stuff like:
-
-```{r}
-# ordering by score
-x[order(x$score),]
-```
-or
-```{r}
-# selecting only positive scores
-x[x$score >= 0,]
-```
-or
-```{r}
-# replacing negative scores with zero
-x[x$score < 0, "score"] <- 0
-```
-
-while that is all possible, the `[row, column]` syntax is not very comfortable. Further, for more tricky operation such as certain aggregations etc., one has to rely on a variety of packages, which often come with an own syntax.
-
-The good news is: The efforts of a small set of key-developers (foremost [Hadley Wickham](http://hadley.nz/)) has let to the development of the  [`tidyverse`](https://www.tidyverse.org/), an ecosystem of R packages particularly designed for data science applications. All packages share an underlying design philosophy, common API, grammar, and data structures. 
+The good news is: The efforts of a small set of key-developers (foremost [Hadley Wickham](http://hadley.nz/)) has let to the development of the  [`tidyverse`](https://www.tidyverse.org/), an ecosystem of `R` packages particularly designed for data science applications. All packages share an underlying design philosophy, common API, grammar, and data structures. 
 
 Among the most amazing contributions here is [`dplyr`](https://dplyr.tidyverse.org/), a grammar of data manipulation, providing a consistent set of verbs that help you solve the most common data manipulation challenges. I use `dplyr` for 90% of my data-manipulation tasks for the following reasons:
 
-* All the underlying code is runs optimized in `C++`, making it faster than most base R
+* All the underlying code is runs optimized in `C++`, making it faster than most base `R`
 * It consistently unifies the grammar of data manipulation to a small set of operations, which can be flexibly combined to master almost every task
 * It is designed to work neathly with the `%>%` pipe-operator of [magrittr](hhttps://magrittr.tidyverse.org/) (more on that later)
 * its syntax is very similar to the logic of `SQL` and other data-management languages
@@ -493,52 +436,56 @@ I will not touch on all packages there, but the complete `tidyverse` covers almo
 ## General syntax
 So, let's zoom in the `dplyr` functionality and syntax for a moment, before we illustrate it at the following data-manipulation tasks.
 
-dplyr is designed to abstract over how the data is stored. That means as well as working with local data frames, you can also work with remote database tables, using exactly the same R code. Install the `dbplyr` package then read `vignette("databases", package = "dbplyr")`.
+dplyr is designed to abstract over how the data is stored. That means as well as working with local data frames, you can also work with remote database tables, using exactly the same `R` code. Install the `dbplyr` package then read `vignette("databases", package = "dbplyr")`.
 
-First, let's install (if necessary) and load it. For the sake of illustration, I will load every package of the `tidyverse` one-by-one when we need it. However, normally I just load `library(tidyverse)` all at once, since I need a lot of these packages often anyhow
+For the sake of illustration, I will load every package of the `tidyverse` one-by-one when we need it. However, normally I just load `library(tidyverse)` all at once, since I need a lot of these packages often anyhow
 
 ```{r,warning=FALSE}
-# # The easiest way to get dplyr is to install the whole tidyverse, including GGplot2 and all the stuff we will need later anyhow:
-# install.packages("tidyverse")
-# library(tidyverse) # To load the whole compilation of packages
-library(dplyr)
-library(magrittr) # For some advanced piping operations not included in dplyr
+library(tidyverse) # To load the whole compilation of packages
 ```
 
 
 ### Piping in `dplyr`
 
-![Cleaning](media/m1_pipe.jpg)
+![Cleaning](https://www.dropbox.com/s/13okk1po1gqae6b/pipe.jpg?dl=1)
 
-in traditional R syntax, data-manipulations are carried out one by one. For example, one would first assign a new variable `x$numbers <- 1:5`, then maybe manipulate it `x$numbers <- x$numbers * 2`, and subset it `x <- x[x$numbers > 4]`. `dplyr` makes use of `margrittr`'s pipes, written like `%>%`. A pipe means take the output of it's left-hand side and insert it as first input in the function on the right-hand side. Accordingly, all `dplyr` functions follow the syntax that their first input is always the data to be manipulated. Therefore, they can all be "piped".
+in traditional `R` syntax, data-manipulations are carried out one by one. For example, one would first assign a new variable `x$numbers <- 1:5`, then maybe manipulate it `x$numbers <- x$numbers * 2`, and subset it `x <- x[x$numbers > 4]`. `dplyr` makes use of `margrittr`'s pipes, written like `%>%`. 
 
-The example before we could pipe as follows:
+A pipe means take the output of it's left-hand side and insert it as first input in the function on the right-hand side. Accordingly, all `dplyr` functions follow the syntax that their first input is always the data to be manipulated. Therefore, they can all be "piped".
 
+For example, we could pipe as follows (donh't worry about the other syntax yet):
 ```{r, eval = FALSE}
-x <- data_frame(numbers = 1:5) %>%
+x <- tibble(numbers = 1:5) %>%
   mutate(numbers = numbers * 2) %>%
   filter(numbers > 4)
+x
 ```
 
-It basically reads lite: Create a dataframe (to be precise, a `tibble`) with the variable "numbers" and assign the values 1:5 THEN multiply them with 2 THEN subset the dataframe to only rows with a nuimber value higher than 4.
+It basically reads like: 
+* Create a dataframe (to be precise, a `tibble`) with the variable "numbers" and assign the values 1:5.
+* THEN multiply them with 2.
+: THEN subset the dataframe to only rows with a nuimber value higher than 4.
 
 It first looks not so intuitive, but it will become your second nature. Using pipes facilitates fast, reproducible and easily readable coding practices, and all of you are encouraged to go on with that.
 
-One note: `%>%` pipes do not autometically assign their output to the left-hand side object, meaning the original dataset will not per se be overwritten. To do that, there are two ways:
+**Note:** `%>%` pipes do not autometically assign their output to the left-hand side object, meaning the original dataset will not per se be overwritten. To do that, there are two ways:
 1: Initially, assign the output to the original data with `<-`
 2: Initially, use `margrittr`'s `%<>%` command, meaning: Assign and pipe.
 
 ```{r, eval = FALSE, warning = FALSE}
-x <- x %>%
+# This will create an output, but not change x
+x %>%
   filter(numbers > 5)
 
+# This will re-assign x
+x <- x %>%
+  filter(numbers > 5)
+# is equivalent to
 x %<>%
-  filter(numbers > 8) 
+  filter(numbers > 5) 
 ```
 
-In conclusion:
-The pipe basically passes on dataframe between functions in the following way:
-
+In conclusion: The pipe basically passes on dataframe between functions in the following way:
 ```{r, eval = FALSE, warning = FALSE}
 x %>% fun(y)
 # Is equivalent to
@@ -549,7 +496,6 @@ x %<>% fun(y)
 # Is equivalent to
 x <- fun(x, y)
 ```
-
 
 ### The 5 core verbs of data-manipulation
 At ity's core are 5 central verbs of data/manipulation, which are
@@ -562,18 +508,16 @@ At ity's core are 5 central verbs of data/manipulation, which are
 
 These all combine naturally with `group_by()` which allows you to perform any operation "by group". You can learn more about them in `vignette("dplyr")`. As well as these single-table verbs, dplyr also provides a variety of two-table verbs (joins and mutations), which you can learn about in `vignette("two-table")`.
 
-We will explore now a bit with the starwars dataset, which comes together with `dplyr`
+We will explore now a bit with the starwars dataset, which comes together with `dplyr`. First, let's get an intuition what's in it. 
 
 ```{r}
-head(starwars) # The "startwars" dataset is an integrated dplyr goddie :)
+starwars %>% head() # The "startwars" dataset is an integrated dplyr goddie :)
 ```
 
-For a first inspection of new data, I like the corresponding function in the little `skimr` package, which gives a nice brief summary on data, types, and values.
+
 
 ```{r}
-# install.packages("skimr")
-library(skimr)
-skim(starwars)
+starwars %>% glimpse()
 ```
 
 

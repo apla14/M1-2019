@@ -2,6 +2,8 @@
 title: 'SDS M1: The Datascience Pipeline'
 author: "Daniel S. Hain (dsh@business.aau.dk)"
 output:
+  pdf_document:
+    toc: yes
   html_document:
     df_print: paged
     number_sections: yes
@@ -17,7 +19,6 @@ set.seed(1337)
 
 rm(list=ls()); graphics.off() # get rid of everything in the workspace
 library(knitr) # For display of the markdown
-if (!require("pacman")) install.packages("pacman") # package for loading and checking packages :)
 
 ### Knitr options
 knitr::opts_chunk$set(warning=FALSE,
@@ -29,6 +30,7 @@ knitr::opts_chunk$set(warning=FALSE,
 
 ```{r}
 ### Install packages if necessary
+if (!require("pacman")) install.packages("pacman") # package for lading and checking packages :)
 pacman::p_load(devtools, rstudioapi, tidyverse)
 ```
 

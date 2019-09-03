@@ -189,3 +189,44 @@ In summary, it's all not that hard if you structure your work sufficiently and h
 * Start with a reasonable objective
 * Understand your data intuitively
 * Make sure that your pipeline stays solid
+
+# Machine Learning: Some clarifications
+
+## General
+
+As with any concept, machine learning may have a slightly different definition, depending on whom you ask. A little compilation of definitions by academics and practioneers alike:
+
+* "Machine Learning at its most basic is the practice of using algorithms to parse data, learn from it, and then make a determination or prediction about something in the world." - Nvidia 
+* "Machine learning is the science of getting computers to act without being explicitly programmed." - Stanford
+* "Machine learning is based on algorithms that can learn from data without relying on rules-based programming."- McKinsey & Co.
+* "Machine learning algorithms can figure out how to perform important tasks by generalizing from examples." - University of Washington
+* "The field of Machine Learning seeks to answer the question "How can we build computer systems that automatically improve with experience, and what are the fundamental laws that govern all learning processes?" - Carnegie Mellon University
+
+
+## Supervised vs. Unsupervised ML
+
+### An intuitive perspective
+
+![](media/m7_super_unsuper2.png){width=750px}
+
+### A functional perspective
+
+![](media/m7_super_unsuper.png){width=750px}
+
+### Overview over types and classes of algorithms
+
+Sometimes, the lines are blurry, given the vast amount of algorithms and techniques, which constantly expands. 
+
+![](media/m7_ml_map.png){width=1000px}
+
+### Supervised ML
+
+* Concerned with labeling/classification/input-output-mapping/prediction tasks
+* Subject of the next lecture, so stay patient
+
+### Unsupervised ML
+
+Tasks related to pattern recognition and data exploration, in dase there yet does not exist a right answer or problem structure. Main application
+
+1. **Dimensionality reduction:** Finding patterns in the features of the data
+2. **Clustering:** Finding homogenous subgroups within larger group

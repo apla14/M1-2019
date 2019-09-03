@@ -1,5 +1,5 @@
 ---
-title: 'M1-7: Unsupervised Machine Learning'
+title: 'Unsupervised Machine Learning (in R)'
 author: "Daniel S. Hain (dsh@business.aau.dk)"
 date: "12/09/2018"
 output:
@@ -9,96 +9,36 @@ output:
     toc_float: true
     number_sections: yes
 ---
-
 ```{r setup, include=FALSE}
 ### Generic preamble
-Sys.setenv(LANG = "en")
+Sys.setenv(LANG = "en") # For english language
+options(scipen = 5) # To deactivate annoying scientific number notation
+set.seed(1337) # To have a seed defined for reproducability
 
-### Clean Workspace (I like to start clean)
 rm(list=ls()); graphics.off() # get rid of everything in the workspace
-detachAllPackages <- function() { # Also, detach packages to avoid functions masked by others
-  basic.packages <- c("package:stats","package:graphics","package:grDevices","package:utils","package:datasets","package:methods","package:base")
-  package.list <- search()[ifelse(unlist(gregexpr("package:",search()))==1,TRUE,FALSE)]
-  package.list <- setdiff(package.list,basic.packages)
-  if (length(package.list)>0)  for (package in package.list) detach(package, character.only=TRUE)
-}
-detachAllPackages(); rm(detachAllPackages)
-
-### Load packages  
-library(knitr) # For display of the markdown
+if (!require("pacman")) install.packages("pacman") # package for loading and checking packages :)
+if (!require("knitr")) install.packages("knitr"); library(knitr) # For display of the markdown
 
 ### Knitr options
-### Knitr options
-opts_chunk$set(warning=FALSE,
-               message=FALSE,
-               fig.align="center"
-               )
+knitr::opts_chunk$set(warning=FALSE,
+                     message=FALSE,
+                     fig.align="center"
+                     )
 ```
 
-Some housekeeping: In case you don't have the necessary packages installed, run this script to do so.
 
 ```{r}
 ### Install packages if necessary
-list.of.packages <- c("devtools", "rstudioapi", "knitr", "tidyverse", "data.table", "skimr",  "factoextra", "FactoMineR", "GGally", "VIM", "mice", "reshape2")
-new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages)) install.packages(new.packages)
-rm(list.of.packages, new.packages)
+pacman::p_load(tidyverse, magrittr, data.table, 
+               FactoMineR, # For factor analysis, PCA, and clustering
+               factoextra, # for adittional visualizations of PCA etc
+               GGally # For some very nice datazis addons for ggplot2
+               )
 ```
 
-Load standard packages
+# Introduction
 
-```{r}
-### Load packages  Standard
-library(tidyverse) # Collection of all the good stuff like dplyr, ggplot2 ect.
-library(magrittr) # For adittional piping operators
-library(data.table) # Good format to work with large datasets
-library(skimr) # Nice descriptives
-```
-
-An executable version on kaggle can be found [HERE](https://www.kaggle.com/danielhain/sds-2018-m1-7-unsupervised-ml)
-
-
-# Machine Learning: Some clarifications
-
-## General
-
-As with any concept, machine learning may have a slightly different definition, depending on whom you ask. A little compilation of definitions by academics and practioneers alike:
-
-* "Machine Learning at its most basic is the practice of using algorithms to parse data, learn from it, and then make a determination or prediction about something in the world." - Nvidia 
-* "Machine learning is the science of getting computers to act without being explicitly programmed." - Stanford
-* "Machine learning is based on algorithms that can learn from data without relying on rules-based programming."- McKinsey & Co.
-* "Machine learning algorithms can figure out how to perform important tasks by generalizing from examples." - University of Washington
-* "The field of Machine Learning seeks to answer the question "How can we build computer systems that automatically improve with experience, and what are the fundamental laws that govern all learning processes?" - Carnegie Mellon University
-
-
-
-## Supervised vs. Unsupervised ML
-
-### An intuitive perspective
-
-![](media/m7_super_unsuper2.png){width=750px}
-
-### A functional perspective
-
-![](media/m7_super_unsuper.png){width=750px}
-
-### Overview over types and classes of algorithms
-
-Sometimes, the lines are blurry, given the vast amount of algorithms and techniques, which constantly expands. 
-
-![](media/m7_ml_map.png){width=1000px}
-
-### Supervised ML
-
-* Concerned with labeling/classification/input-output-mapping/prediction tasks
-* Subject of the next lecture, so stay patient
-
-### Unsupervised ML
-
-Tasks related to pattern recognition and data exploration, in dase there yet does not exist a right answer or problem structure. Main application
-
-1. **Dimensionality reduction:** Finding patterns in the features of the data
-2. **Clustering:** Finding homogenous subgroups within larger group
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 # Dimensionality Reduction Techniques
 
@@ -106,13 +46,11 @@ Tasks related to pattern recognition and data exploration, in dase there yet doe
 
 Dimensionality reduction techniques are foremost useful to (you might see it coming) reduce the dimensionality of our data. So, what does that mean? And why should we want to do that?
 
-Dimensions here is a synonym for variables, so what we want to really do is have less variables. To do that, we have to find ways to express the same amount of information with fewer, but more information rich variables. This is particularly useful to:
+Dimensions here is a synonym for variables, so what we want to really do is have less variables. To do that, we have to find ways to express the same amount of information with fewer, but more information-rich variables. This is particularly useful to:
 
-* Find patterns in the **features** of the data
-* Visualization of **high-dimensional** data
-* **Pre-processing** before supervised learning
-
-### Overview over Techniques
+* Find patterns in the **features** of the data.
+* Visualization of **high-dimensional** data.
+* **Pre-processing** before supervised ML tasks.
 
 The type of analysis to be performed depends on the data set formats and structures. The most commonly used DR techniques are:
 
@@ -125,18 +63,18 @@ The type of analysis to be performed depends on the data set formats and structu
 
 ![](media/m7_dim_tech.png){width=500px}
 
-### Principal Component Analysis (PCA)
+## Principal Component Analysis (PCA)
 
-#### General
+### General
 
-* A popular method is principal component analysis (PCA)
+* A popular method is "Principal Component Analysis" (PCA)
 * Three goals when finding lower dimensional
 representation of features:
      1. Find linear combination of variables to createprincipal components
      2. Maintain most variance in the data
      3. Principal components are uncorrelated (i.e.orthogonal to each other)
 
-#### The math and intuition behind it
+### The math and intuition behind it
 The mathematics underlying it are somewhat complex, so I won't go into too much detail, but the basics of PCA are as follows: you take a dataset with many variables, and you simplify that dataset by turning your original variables into a smaller number of "Principal Components".
 
 ![](media/m7_PCA1.png){width=500px}
@@ -228,7 +166,6 @@ library(VIM)
 
 
 ```{r,fig.width=10,fig.height=10,fig.align='center'}
-marginmatrix(data[,vars.desc]) # Note: Cool feature, but matrix becones just too big for many features
 
 aggr(data[,vars], 
      col = c('navyblue','red'), 

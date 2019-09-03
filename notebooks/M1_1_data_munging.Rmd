@@ -1,8 +1,8 @@
 ---
-title: 'M1: Data Munging (in R)'
+title: 'Data manipulation & Exploration (in R)'
 author: "Daniel S. Hain (dsh@business.aau.dk)"
 output:
-  html_document:
+  html_document: 
     df_print: paged
     number_sections: yes
     toc: yes
@@ -11,13 +11,13 @@ output:
 
 ```{r setup, include=FALSE}
 ### Generic preamble
-Sys.setenv(LANG = "en")
-options(scipen = 5)
-set.seed(1337)
+Sys.setenv(LANG = "en") # For english language
+options(scipen = 5) # To deactivate annoying scientific number notation
+set.seed(1337) # To have a seed defined for reproducability
 
 rm(list=ls()); graphics.off() # get rid of everything in the workspace
-library(knitr) # For display of the markdown
 if (!require("pacman")) install.packages("pacman") # package for loading and checking packages :)
+if (!require("knitr")) install.packages("knitr"); library(knitr) # For display of the markdown
 
 ### Knitr options
 knitr::opts_chunk$set(warning=FALSE,
@@ -31,19 +31,13 @@ knitr::opts_chunk$set(warning=FALSE,
 ### Install packages if necessary
 pacman::p_load(tidyverse, # Collection of all the good stuff like dplyr, ggplot2 ect.
                magrittr, # For extra-piping operators (eg. %<>%)
-               countrycode # Helpful functions when working with countrycodes
+               countrycode, # Helpful functions when working with countrycodes
+               skimr # For skimming
                )
 ```
 
 # Introduction
-Welcome to your first SDS session. In this session, you will learn the basic grammar of data manipulation, some best-practice advices
-
-In our OWSEMN pipeline, we will here focus mainly in
-
-* **O:** Obtaining our data
-* **S:** Scrubbing / Cleaning our data
-
-Particular focus will be on **S**, while we keep the **O** parts simple. More tricky data-gathering settings will be encountered in later sessions. Since data manipulation always follows a purpose and requires some understanding of the data at hand, we will also have a first glance in **E** (exploration and visualization). However, we will her only cover the very basics and skip most of the details. Again, you will have a dedicated sessions lateron.
+In this session, you will learn the basic grammar of data manipulation, some best-practice advices. Since data manipulation always follows a purpose and requires some understanding of the data at hand, we will also have a first glance data exploration and visualization. However, we will her only cover the very basics and skip most of the details. Again, you will have a dedicated sessions lateron.
 
 In this session, you will learn:
 
@@ -51,8 +45,7 @@ In this session, you will learn:
 * How to create various types of data summarization
 * How to also apply these actions on grouped data
 * How to join data from different sources
-* How to reshape your data
-* How to deal with missing values
+* How to reshape (pivot) your data
 
 From my experience, this covers ca. 95% of common data manipulation tasks. Sound like fun? Lets get started!
 
@@ -88,7 +81,7 @@ x <= y # less than or equal: "<", ">", and ">=" also work
 ```
 
 
-#### Special constants: `NA`, `NULL`, `Inf`, `-Inf`, `NaN`
+### Special constants: `NA`, `NULL`, `Inf`, `-Inf`, `NaN`
 
 `NA` indicates missing or undefined data
 ```{r}
@@ -263,7 +256,7 @@ m * m         # * does element-wise multiplication
 
 
 
-#### Arrays: more than 2 dimensions
+### Arrays: more than 2 dimensions
 
 Created with the `array()` function:
 ```{r}
@@ -351,7 +344,7 @@ mean (dfr1[dfr1$Female==TRUE,4])
 ```
 
 
-### Flow Control (loops & friends)
+## Flow Control (loops & friends)
 Loops are powerful little helpers to do the same operation iterating over a number of items.
 
 If statements: `if (condition) expr1 else expr2`
@@ -435,10 +428,11 @@ in traditional `R` syntax, data-manipulations are carried out one by one. For ex
 A pipe means take the output of it's left-hand side and insert it as first input in the function on the right-hand side. Accordingly, all `dplyr` functions follow the syntax that their first input is always the data to be manipulated. Therefore, they can all be "piped".
 
 For example, we could pipe as follows (don't worry about the other syntax yet):
-```{r, eval = FALSE}
+```{r}
 x <- tibble(numbers = 1:5) %>%
   mutate(numbers = numbers * 2) %>%
   filter(numbers > 4)
+
 x
 ```
 
@@ -455,7 +449,7 @@ It first looks not so intuitive, but it will become your second nature. Using pi
 1: Initially, assign the output to the original data with `<-`
 2: Initially, use `margrittr`'s `%<>%` command, meaning: Assign and pipe.
 
-```{r, eval = FALSE, warning = FALSE}
+```{r}
 # This will create an output, but not change x
 x %>%
   filter(numbers > 5)
@@ -589,7 +583,7 @@ starwars %>%
 ```
 
 
-### Doing manipulation by group: `group_by`
+### Bonus: Doing manipulation by group: `group_by`
 Finally, `by_group()` is offers the perfect complement to the 5 basic verbs, since it allows to perform aqll the above mentioned tasks sepperate according to used-defined groupings in one or multiple categories. Lets look at some examples:
 
 ![Group](https://www.dropbox.com/s/lpuoesmr9hqwfdg/dplyr_group.png?dl=1)
@@ -1127,13 +1121,13 @@ The combined use of `group_by()`, `arrange()`, and `slice()` is extremly neath t
 
 1: We would like to identify rows where a certain string appears....
 ```{r}
+library(stringr)
 votes_tidy %>%
   filter(topic %>% str_detect("Economic")) %>% head(10)
 ```
 
 2: or we want to replace a certain character string... eg. because it is just too long... 
 ```{r}
-library(stringr)
 votes_tidy %>%
   filter(topic %>% str_detect("Economic")) %>% 
   mutate(topic = topic %>% str_replace_all(" development", " dev.")) %>% head(10)
@@ -1146,6 +1140,174 @@ And to conclude this session, lets explore a bit on our own. A [fun colab notebo
 
 Have fun, and see you next time!
 
+
+# Visualization
+
+```{r}
+rm(list=ls())
+```
+
+Lets take a step back and zoom a bit into different forms of visualization. We will now take a look at the `BIXI Bikeshare Data`, covering 500k bike-rides in the BIXI bike-sharing system in Montreal.
+
+```{r}
+bike <- readRDS(url("https://www.dropbox.com/s/ydbn67h8as7rxet/bikes_montreal.rds?dl=1"))
+```
+
+Lets take a look:
+
+```{r}
+bike %>% glimpse()
+```
+
+```{r}
+bike %>% skim()
+```
+
+We see here a number of different variable types present, namely:
+
+* Continuous variables
+* Categorical variables
+* Temporal variables
+
+## Basic visualization of variable types
+
+### Summaries of One Variable: Continuous
+
+```{r}
+bike %>% ggplot(aes(x = duration_sec)) +
+  geom_histogram()
+```
+
+
+```{r}
+bike %>% ggplot(aes(x = duration_sec)) +
+  scale_x_log10() +
+  geom_histogram()
+```
+
+
+### Summaries of One Variable: Discrete
+
+```{r}
+bike %>% ggplot(aes(x = start_dow)) +
+  geom_bar()
+```
+
+### Summaries of One Variable: Temporal
+
+```{r}
+bike %>%
+  group_by(start_wk) %>%
+  summarise(n = n()) %>%
+  ggplot(aes(x = start_wk, y = n)) +
+  geom_line()
+```
+
+
+## Summarizing multiple variablea jointly
+
+Ok, that was pretty easy. However, the insights gained so far are pretty little. To tease out interesting pattern in our data, it might not be enough to only look at one variable at a time. To display relationships between multiple variables, we mainly can:
+
+* Use aestetics such as `col`, `fill`, `size`, `shape`
+* Use `facet_wrap()`
+
+Lets look at some examples:
+
+First, we could take a look at the number of daily rides with  workweek / weekend days colored differently.
+
+```{r}
+# Compute daily counts
+daily <- bike %>%
+  group_by(start_day, weekday) %>%
+  summarise(n = n())
+
+# Plot the result
+ggplot(daily, aes(start_day, n, color = weekday)) +
+  geom_point()
+```
+
+Now let's look at how rides are distributed according to the time of day. Let's make a summary plot of weekly ride counts faceted by start hour of day and broken down by workweek/weekend. Here, we will use the `facet_grid`
+
+
+```{r,fig.height=5 , fig.width=15}
+# Compute week_hod
+week_hod <- bike %>%
+  group_by(start_wk, start_hod, weekday) %>%
+  summarise(n = n())
+
+# Plot the result
+ggplot(week_hod, aes(start_wk, n, color = weekday)) +
+  geom_point() +
+  facet_grid(~ start_hod) +
+  scale_y_sqrt()
+```
+
+
+
+Expanding on the previous plot, let's add one more variable into our summary, adding a facet dimension for whether or not the rider is a member of BIXI.
+
+```{r,fig.height=7.5, fig.width=15}
+# Compute wk_memb_hod
+wk_memb_hod <- bike %>%
+  group_by(start_wk, start_hod, weekday, membership) %>%
+  summarise(n = n())
+
+# Plot the result
+ggplot(wk_memb_hod, aes(start_wk, n, color = weekday)) +
+  geom_point() +
+  facet_grid(membership ~ start_hod) +
+  scale_y_sqrt()
+```
+
+
+Let's now look at the number of rides vs. hour for each day. To start, we'll create a summary dataset for the first full month in the dataset (May) and look at it.
+
+```{r,fig.height=7.5, fig.width=15}
+# Compute daily_may
+daily_may <- bike %>%
+  filter(start_mon == 5) %>%
+  group_by(start_day, start_hod, membership) %>%
+  summarise(n = n())
+
+# Plot the result
+ggplot(daily_may, aes(start_hod, n, color = membership)) +
+  geom_point() +
+  facet_wrap(~ start_day, ncol = 7)
+```
+
+
+## Your turn
+
+Ok, its your turn again. We will take a look at the `gapminder` data, a dataset with a set of socio-economic macro indicators.
+
+```{r}
+library(gapminder)
+data <- gapminder
+data
+```
+
+```{r}
+data %>% glimpse()
+```
+
+```{r}
+data %>% skim()
+```
+
+We see again a set of contiineous variables, categorical variables, and a time-dimension. Lets try to explore it a bit, try to use  different types of visualizations and facets to dig into the following questions: 
+
+* How are countries, and continents, doing in terms of `lifeExp` and `gdpPercap`
+* How did `lifeExp` and `gdpPercap` develop over time in general?
+* Are there different trends across countries and continents to be seen?
+* Does these trends seem to be related to `pop` or `gdpPercap`
+
+Use different types of visualizations, facets, and aestetics (size, col, fill, shape), as well as summary functions.
+
+# Endnotes
+
+```{r}
+sessionInfo()
+````
 
 
 

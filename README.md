@@ -9,7 +9,7 @@
 ## Data Manipulation & Exploration
 
 * Data Manipulation & Exploration (in Python)
-     * Exploring the Open Policing Dataset - Full NB: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/raw/master/notebooks/SDS_S1_2_EDA.ipynb#&offline=true&sandboxMode=true)
+     * Exploring the Open Policing Dataset - Full NB: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/SDS_S1_2_EDA.ipynb#&offline=true&sandboxMode=true)
      *
 
 * Data Manipulation & Exploration (in R)

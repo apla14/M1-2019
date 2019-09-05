@@ -14,4 +14,4 @@
      * In-class assignment starter (under development: added date-time fix; new methods for missing data handling): [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/SDS_M1___S1_2___Exercise_u.ipynb#&offline=false&sandboxMode=true)
 
 * Data Manipulation & Exploration (in R) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1nvwC3ZCg_5MEiDG9zXsvxsJNls01hs-f#forceEdit=true&offline=true&sandboxMode=true)
-* Data Visualization (in R) [![Open In Colab]()
+* Data Visualization (in R) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)]()

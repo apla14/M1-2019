@@ -36,6 +36,14 @@ pacman::p_load(tidyverse, # Collection of all the good stuff like dplyr, ggplot2
                )
 ```
 
+Short upfront note:
+
+Google colab does not support `R` kernels. Alternatively, you can use the Microsoft Azure solution, which is quite similar but slower. However, there is a little trick how to make `R`vrun with colab.
+
+* You can simply run the `demo.ipynb` from [IRkernel Github](https://colab.research.google.com/github/IRkernel/IRkernel/blob/master/example-notebooks/Demo.ipynb)
+* Make changes and then save a copy to your Google Drive.
+* You can also see all 3 example notebooks [here](https://github.com/IRkernel/IRkernel/tree/master/example-notebooks).
+
 # Introduction
 In this session, you will learn the basic grammar of data manipulation, some best-practice advices. Since data manipulation always follows a purpose and requires some understanding of the data at hand, we will also have a first glance data exploration and visualization. However, we will her only cover the very basics and skip most of the details. Again, you will have a dedicated sessions lateron.
 
@@ -155,13 +163,13 @@ v1!=v2       # Are corresponding elements *not* equivalent? Same as !(v1==v2)
 (v1>2) | (v2>0)   # | is the boolean OR, returns a vector.
 (v1>2) & (v2>0)   # & is the boolean AND, returns a vector.
 (v1>2) || (v2>0)  # || is the boolean OR, returns a single value (if it is true at least once)
-(v1>2) && (v2>0)  # && is the boolean AND, dito
+(v1>2) && (v2>0)  # && is the boolean AND, returns a single value (if it is true at least once)
 ```
 
 Adressing vector elements:
 ```{r}
 v1[3]             # third element of v1
-v1[2:4]           # elements 2, 3, 4 of v1
+v1[2:4]           # elements 2, to 4 of v1
 v1[c(1,3)]        # elements 1 and 3 - note that your indexes are a vector
 v1[c(T,T,F,F,F)]  # elements 1 and 2 - only the ones that are TRUE
 v1[v1>3]          # v1>3 is a logical vector TRUE for elements >3
@@ -1004,8 +1012,8 @@ Luckily, R's `tidyr` package offers you exactly these functionalities in 4 easy 
 
 In detail, they are:
 
-* `gather()`: collapse columns into rows (wide to long)
-* `spread()`: spread two columns into multiple columns (long to wide)
+* `gather()`: collapse columns into rows (wide to long). **NOTE:** Since new `dplyr` release called `pivot_longer()`
+* `spread()`: spread two columns into multiple columns (long to wide). **NOTE:** Since new `dplyr` release called `pivot_wider()`
 * `unite()`: Unite multiple columns into one
 * `separate()`: separate one column into multiple
 
@@ -1139,169 +1147,6 @@ Regular expressions are a bit of a mess to learn, but extremely powerful. In cas
 And to conclude this session, lets explore a bit on our own. A [fun colab notebook exercise](https://colab.research.google.com/drive/1UBDaHb4dQ9BJrOOAd3yk09lilRlAvo7t) is waiting for you again!
 
 Have fun, and see you next time!
-
-
-# Visualization
-
-```{r}
-rm(list=ls())
-```
-
-Lets take a step back and zoom a bit into different forms of visualization. We will now take a look at the `BIXI Bikeshare Data`, covering 500k bike-rides in the BIXI bike-sharing system in Montreal.
-
-```{r}
-bike <- readRDS(url("https://www.dropbox.com/s/ydbn67h8as7rxet/bikes_montreal.rds?dl=1"))
-```
-
-Lets take a look:
-
-```{r}
-bike %>% glimpse()
-```
-
-```{r}
-bike %>% skim()
-```
-
-We see here a number of different variable types present, namely:
-
-* Continuous variables
-* Categorical variables
-* Temporal variables
-
-## Basic visualization of variable types
-
-### Summaries of One Variable: Continuous
-
-```{r}
-bike %>% ggplot(aes(x = duration_sec)) +
-  geom_histogram()
-```
-
-
-```{r}
-bike %>% ggplot(aes(x = duration_sec)) +
-  scale_x_log10() +
-  geom_histogram()
-```
-
-
-### Summaries of One Variable: Discrete
-
-```{r}
-bike %>% ggplot(aes(x = start_dow)) +
-  geom_bar()
-```
-
-### Summaries of One Variable: Temporal
-
-```{r}
-bike %>%
-  group_by(start_wk) %>%
-  summarise(n = n()) %>%
-  ggplot(aes(x = start_wk, y = n)) +
-  geom_line()
-```
-
-
-## Summarizing multiple variablea jointly
-
-Ok, that was pretty easy. However, the insights gained so far are pretty little. To tease out interesting pattern in our data, it might not be enough to only look at one variable at a time. To display relationships between multiple variables, we mainly can:
-
-* Use aestetics such as `col`, `fill`, `size`, `shape`
-* Use `facet_wrap()`
-
-Lets look at some examples:
-
-First, we could take a look at the number of daily rides with  workweek / weekend days colored differently.
-
-```{r}
-# Compute daily counts
-daily <- bike %>%
-  group_by(start_day, weekday) %>%
-  summarise(n = n())
-
-# Plot the result
-ggplot(daily, aes(start_day, n, color = weekday)) +
-  geom_point()
-```
-
-Now let's look at how rides are distributed according to the time of day. Let's make a summary plot of weekly ride counts faceted by start hour of day and broken down by workweek/weekend. Here, we will use the `facet_grid`
-
-
-```{r,fig.height=5 , fig.width=15}
-# Compute week_hod
-week_hod <- bike %>%
-  group_by(start_wk, start_hod, weekday) %>%
-  summarise(n = n())
-
-# Plot the result
-ggplot(week_hod, aes(start_wk, n, color = weekday)) +
-  geom_point() +
-  facet_grid(~ start_hod) +
-  scale_y_sqrt()
-```
-
-
-
-Expanding on the previous plot, let's add one more variable into our summary, adding a facet dimension for whether or not the rider is a member of BIXI.
-
-```{r,fig.height=7.5, fig.width=15}
-# Compute wk_memb_hod
-wk_memb_hod <- bike %>%
-  group_by(start_wk, start_hod, weekday, membership) %>%
-  summarise(n = n())
-
-# Plot the result
-ggplot(wk_memb_hod, aes(start_wk, n, color = weekday)) +
-  geom_point() +
-  facet_grid(membership ~ start_hod) +
-  scale_y_sqrt()
-```
-
-
-Let's now look at the number of rides vs. hour for each day. To start, we'll create a summary dataset for the first full month in the dataset (May) and look at it.
-
-```{r,fig.height=7.5, fig.width=15}
-# Compute daily_may
-daily_may <- bike %>%
-  filter(start_mon == 5) %>%
-  group_by(start_day, start_hod, membership) %>%
-  summarise(n = n())
-
-# Plot the result
-ggplot(daily_may, aes(start_hod, n, color = membership)) +
-  geom_point() +
-  facet_wrap(~ start_day, ncol = 7)
-```
-
-
-## Your turn
-
-Ok, its your turn again. We will take a look at the `gapminder` data, a dataset with a set of socio-economic macro indicators.
-
-```{r}
-library(gapminder)
-data <- gapminder
-data
-```
-
-```{r}
-data %>% glimpse()
-```
-
-```{r}
-data %>% skim()
-```
-
-We see again a set of contiineous variables, categorical variables, and a time-dimension. Lets try to explore it a bit, try to use  different types of visualizations and facets to dig into the following questions: 
-
-* How are countries, and continents, doing in terms of `lifeExp` and `gdpPercap`
-* How did `lifeExp` and `gdpPercap` develop over time in general?
-* Are there different trends across countries and continents to be seen?
-* Does these trends seem to be related to `pop` or `gdpPercap`
-
-Use different types of visualizations, facets, and aestetics (size, col, fill, shape), as well as summary functions.
 
 # Endnotes
 

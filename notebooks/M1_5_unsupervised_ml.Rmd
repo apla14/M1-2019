@@ -574,7 +574,7 @@ Lastly, a clusters quality is to a large extend determined by its usefulness.
 * External Validity
 
 ## Your turn!
-So, why not have some fun on your own now? try to use what you learned up to now in the following extercise dealing with Gert Hofstede's ["6-D model of national culture""](https://geerthofstede.com/culture-geert-hofstede-gert-jan-hofstede/6d-model-of-national-culture/). Please do the **Exercise 2** in the corresponding section on `github`.
+Ok, we are already at the end again.... Please do the **Exercise 2** in the corresponding section on `github`.
 
 Have fun!
 

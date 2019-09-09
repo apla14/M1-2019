@@ -16,9 +16,12 @@
 
  * Python Translation [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/M1_S3_4_Python_translation.ipynb#&offline=false&sandboxMode=true)
 * Exercises
-    1 Exercise: `dplyr` basics [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/exercises/M1_1_datamunging_ex1.ipynb#offline=true&sandboxMode=true)
 
- 
+    1 `dplyr` basics [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/exercises/M1_1_datamunging_ex1.ipynb#offline=true&sandboxMode=true)
+    2 `join_xxx` basics [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/exercises/M1_1_datamunging_ex2.ipynb#offline=true&sandboxMode=true)
+    3 Case study [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/exercises/M1_1_datamunging_ex3.ipynb#offline=true&sandboxMode=true)
+    
 ### [Data Visualization (in R)](https://raw.githack.com/SDS-AAU/M1-2019/master/notebooks/M1_2_data_viz.html)                                 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/M1_2_data_viz.ipynb#offline=true&sandboxMode=true)
 * Exercises
-    * Exercise 1: 
+
+    1 `ggplot2` basics [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/exercises/M1_2_dataviz_ex1.ipynb#offline=true&sandboxMode=true)

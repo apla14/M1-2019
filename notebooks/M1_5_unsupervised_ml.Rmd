@@ -53,7 +53,7 @@ As with any concept, machine learning may have a slightly different definition, 
 
 ### An intuitive perspective
 
-![](https://www.dropbox.com/s/45m8ef7qsmqbhvs/super_unsuper2.png?dl=2){width=750px}
+![](https://www.dropbox.com/s/45m8ef7qsmqbhvs/super_unsuper2.png?dl=1){width=750px}
 
 ### A functional perspective
 
@@ -346,6 +346,9 @@ res.pca %>%
                   ggtheme = theme_gray()) 
 ```
 
+## Your turn
+Alright, its time for some wake-up work again. Please explore clustering a bit more in **Exercise 1** in the corresponding `Github` section. Have fun!
+
 
 # Clustering
 
@@ -570,8 +573,14 @@ Lastly, a clusters quality is to a large extend determined by its usefulness.
 * Internal Validity
 * External Validity
 
-# Your turn!
+## Your turn!
 So, why not have some fun on your own now? try to use what you learned up to now in the following extercise dealing with Gert Hofstede's ["6-D model of national culture""](https://geerthofstede.com/culture-geert-hofstede-gert-jan-hofstede/6d-model-of-national-culture/). Please do the **Exercise 2** in the corresponding section on `github`.
 
 Have fun!
+
+# Endnotes
+
+```{r}
+sessionInfo()
+````
 

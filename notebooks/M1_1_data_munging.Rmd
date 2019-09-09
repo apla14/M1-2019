@@ -1,6 +1,7 @@
 ---
 title: 'Data manipulation & Exploration (in R)'
 author: "Daniel S. Hain (dsh@business.aau.dk)"
+date: "today"
 output:
   html_document: 
     df_print: paged
@@ -16,7 +17,7 @@ options(scipen = 5) # To deactivate annoying scientific number notation
 set.seed(1337) # To have a seed defined for reproducability
 
 rm(list=ls()); graphics.off() # get rid of everything in the workspace
-if (!require("pacman")) install.packages("pacman") # package for loading and checking packages :)
+if (!require("pacman")) install.packages("pacman") # package for loading and checking packages
 if (!require("knitr")) install.packages("knitr"); library(knitr) # For display of the markdown
 
 ### Knitr options
@@ -610,7 +611,7 @@ Note that it is adviced to finish always such operations with `ungroup()`. Other
 
 ## Your turn
 
-Some little exercises in between: Lets go to this [fun exercise on colab](https://colab.research.google.com/drive/1G2pr-SJA5V7QWhMt5fStmlDGU7i2ZUFs), and show what you learned!
+Some little exercises in between: Please solve **Exercise 1** in the corresponding section on `github`
 
 ## Two-table verbs
 It's rare that a data analysis involves only a single table of data. In practice, you'll normally have many tables that contribute to an analysis, and you need flexible tools to combine them. In `dplyr`, there are three families of verbs that work with two tables at a time:
@@ -688,7 +689,7 @@ Even though that doesnt sound too much, when combining them right, these basic v
 
 ## Your turn
 
-Some little exercises in between: Lets go to this [funh colab notebook exercise](https://colab.research.google.com/drive/1r0jZP2txNQsYIHyYPHVfV-A_etn_J259) and show what you learned!
+Some little exercises in between: Please solve **Exercise 2** in the corresponding section on `github`
 
 
 # Case Study: Cleaning up historical data on voting of the United Nations General Assembly
@@ -1144,7 +1145,7 @@ votes_tidy %>%
 Regular expressions are a bit of a mess to learn, but extremely powerful. In case you need it, give it a shot!
 
 ## Your turn
-And to conclude this session, lets explore a bit on our own. A [fun colab notebook exercise](https://colab.research.google.com/drive/1UBDaHb4dQ9BJrOOAd3yk09lilRlAvo7t) is waiting for you again!
+And to conclude this session, lets explore a bit on our own. Please solve **Exercise 3** in the corresponding section on `github`
 
 Have fun, and see you next time!
 

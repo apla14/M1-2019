@@ -18,4 +18,6 @@
 * Exercises
     * Exercise 1: 
  
-* Data Visualization (in R) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1bgDU6CeLHENCloVjg-7rfdKlCpIoA_1a#scrollTo=FXHwQLB9H151&forceEdit=true&offline=true&sandboxMode=true)
+### [Data Visualization (in R)](https://raw.githack.com/SDS-AAU/M1-2019/master/notebooks/M1_2_data_viz.html)                                 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/M1_2_data_viz.ipynb#offline=true&sandboxMode=true)
+* Exercises
+    * Exercise 1: 

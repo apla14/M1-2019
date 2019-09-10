@@ -42,8 +42,19 @@
 
 # Further Resources
 
-## Tools & Notebooks
+## Tutorials & Knowledge
 
+### Datascience in R
+
+* [R for Data Science](https://r4ds.had.co.nz/)
+
+### Datascience in Python
+
+* [Python Data Science Handbook](https://jakevdp.github.io/PythonDataScienceHandbook/index.html)
+
+
+
+## Tools & Notebooks
 * `.rmd` to `ipynb` converter [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/converter_rmd_to_jupyter.ipynb#offline=true&sandboxMode=true)
 
      

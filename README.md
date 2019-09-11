@@ -47,6 +47,7 @@
 ### Datascience in R
 
 * [R for Data Science](https://r4ds.had.co.nz/)
+* [R for Statistical Learning](https://daviddalpiaz.github.io/r4sl/)
 
 ### Datascience in Python
 

@@ -1,7 +1,7 @@
 ---
-title: 'M1-8: Supervised Machine Learning'
+title: 'M1: Supervised Machine Learning'
 author: "Daniel S. Hain (dsh@business.aau.dk)"
-date: "12/09/2018"
+date: "today"
 output:
   html_document:
     df_print: paged
@@ -12,62 +12,33 @@ output:
 
 ```{r setup, include=FALSE}
 ### Generic preamble
-Sys.setenv(LANG = "en")
-
-### Clean Workspace (I like to start clean)
-rm(list=ls()); graphics.off() # get rid of everything in the workspace
-detachAllPackages <- function() { # Also, detach packages to avoid functions masked by others
-  basic.packages <- c("package:stats","package:graphics","package:grDevices","package:utils","package:datasets","package:methods","package:base")
-  package.list <- search()[ifelse(unlist(gregexpr("package:",search()))==1,TRUE,FALSE)]
-  package.list <- setdiff(package.list,basic.packages)
-  if (length(package.list)>0)  for (package in package.list) detach(package, character.only=TRUE)
-}
-detachAllPackages(); rm(detachAllPackages)
-
-### Load packages  Standard
-library(knitr) # For display of the markdown
-
-### pimp up memory (to save on disk if necessary, only works on windows)
-#memory.limit(10 * 10^10)
+Sys.setenv(LANG = "en") # For english language
+options(scipen = 5) # To deactivate annoying scientific number notation
+set.seed(1337) # To have a seed defined for reproducability
 
 ### Knitr options
-opts_chunk$set(warning = FALSE,
-               message = FALSE,
-               echo    = TRUE,
-               fig.align  = "center"
+if (!require("knitr")) install.packages("knitr"); library(knitr) # For display of the markdown
+knitr::opts_chunk$set(warning=FALSE,
+                     message=FALSE,
+                     fig.align="center"
+                     )
+```
+
+
+```{r}
+### Install packages if necessary
+if (!require("pacman")) install.packages("pacman") # package for loading and checking packages :)
+pacman::p_load(tidyverse, magrittr, 
+               caret, # ML suite 
+               ranger, # For fast Random Forests
+               rpart, # For decision tree models
+               GGally, # For nice ggplot summaries
+               ggridges, # ggplot addon for plotting nice multiple conditional density distributions
+               mlbench # Collection on ML datasets
                )
 ```
 
-Some housekeeping (again), installing necessary packages.
-
-```{r}
-list.of.packages <- c("devtools", 
-                      "rstudioapi", 
-                      "tidyverse",
-                      "knitr", 
-                      "data.table",
-                      "caret",
-                      "caretEnsemble",
-                      "recipes",
-                      "ggridges",
-                      "mlbench")
-new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages)) install.packages(new.packages)
-rm(list.of.packages)
-```
-
-Load packages
-
-```{r}
-library(tidyverse) # Collection of all the good stuff like dplyr, ggplot2 ect.
-library(magrittr)
-library(data.table) # Good format to work with large datasets
-library(skimr) # Nice descriptives
-```
-
-Again, the whole exercise can be found executable on kaggle [HERE](https://www.kaggle.com/danielhain/sds-2018-m1-8-supervised-ml)
-
-# Introduction
+# Introduction 
 
 ## Contrasting ML&AI with inferential statistics
 
@@ -91,7 +62,7 @@ Again, the whole exercise can be found executable on kaggle [HERE](https://www.k
 * No "build-in"" causality guarantee $\rightarrow$ verification techniques.
 * Often sporadically used in econometric procedures, but seen as "son of a lesser god". 
 
-## Issues with ML
+## ML model selection, tuning, and validation processes
 
 ### Generalization via "Out-of-Sample-Testing"
 
@@ -107,25 +78,82 @@ In ML, generalization is not achived by statistical derivatives and theoretical 
 			
 An advanced version is a **N-fold-Crossvalidation**, where this process is repeated several time during the **hyperparameter-tuning** phase (more on that later).
 
-![](media/m8_cv_steps.png){width=750px}
+![](https://www.dropbox.com/s/mckm524jdserm2x/cv_steps.png?dl=1){width=750px}
 
-### Model complexity & Hyperparameter Tuning
+### Bias-Variance Tradeoff
 
 As a rule-of-thumb: Richer and more complex functional forms and algorithms tend to be better in predictign complex real world pattern. This is particularly true for high-dimensional (big) data.
 
-![](media/m7_learningmodels.png){width=750px}
+![](https://www.dropbox.com/s/66o5gvtaeh6n5ut/learningmodels.png?dl=1){width=750px}
 
-However, flexible algorithms at one point become so good in mimicing the pattern in our data that they **overfit**, meaning are to much tuned towards a specific dataset and might not reproduce the same accuracy in new data. Therefore, we aim at finding the **sweet spot** of high model complexity yet high-performing out-of-sample predictions
+However, flexible algorithms at one point become so good in mimicing the pattern in our data that they **overfit**, meaning are to much tuned towards a specific dataset and might not reproduce the same accuracy in new data. 
 
-![](media/m8_complexity_error.png){width=750px}
+Generally, we call this tension the **bias-variance tradeoff**, which we can decompose in the two components:
 
-That we do usually in a process of **hyperparameter-tuning**, where we gear different options the models offer towards high out-of-sample predictive performance. Mathematically speaking, we try to minimize a loss function $L(.)$ (eg. RMSE) the following problem:
+* **Bias Error** The simplifying assumptions made by a model to make the target function easier to learn. Generally, simple parametric algorithms have a high bias making them fast to learn and easier to understand but generally less flexible. In turn, they have lower predictive performance on complex problems that fail to meet the simplifying assumptions of the algorithms bias. In turn, they are less prone to overfitting.
+* **Variance Error:** Variance is the amount that the estimate of the target function will change if different data was used. Ideally, it should not change too much from one training dataset to the next, meaning that the algorithm is good at picking out the hidden underlying mapping between the inputs and the output variables. Generally, nonparametric and complex ML algorithms tend to that have a lot of flexibility have a high variance. 
+
+As a result, the predictive performance (on new data) of algorithms and models will always depend on this trade-off between bias and variance. Mathematically, this can be formalized as:
+
+$${\displaystyle \operatorname {E} {\Big [}{\big (}y-{\hat {f}}(x){\big )}^{2}{\Big ]}={\Big (}\operatorname {Bias} {\big [}{\hat {f}}(x){\big ]}{\Big )}^{2}+\operatorname {Var} {\big [}{\hat {f}}(x){\big ]}+\sigma ^{2}}$$
+
+Note that why bias and variance are reducible errors which decline when using a more suitable model to model the underlying relationships in the data, $\sigma^2$ denotes the unreducible complexity caused by random noise, measurement errors, or missing variables, which represent a boundary to our ability to predict given the data at hand.
+
+Lets look at an example. We create some example data, where $x$ is a uniformly distributed random variable bounded between 0 and 1, and $y = sin(n)$ 
+
+```{r}
+data <- tibble(x = runif(50, min = 0, max = 3.14),
+               y = sin(x)  # True function to learn
+               )
+data %>% ggplot(aes(x = x, y = y)) + 
+  geom_point()
+```
+
+How, we add some random noise, which is nbormally distributed
+
+```{r}
+error <- rnorm(n = 50, mean = 0, sd = 0.05)
+
+
+data %<>%
+  mutate(y_e = y + error)
+
+data %>% ggplot(aes(x = x, y = y_e)) + 
+  geom_point()
+```
+
+We see the formerly clearly visible underlying relationship between $x$ and $y$ now to some extent disturbed by this noise. However, keep in mind that the process that generated the data is still $y = sinus(x)$, which would also be the best funtional form to identify by any predictive algorithm.
+
+Lets see how models with different levels of complexity would interpret the reÃ¦lationship between $x$ and $y$:
+
+  2. $y$ is modeled as a linear function of $x$
+  3. $y$ is modeled as a curvelinear function of $x$
+  3. $y$ is modeled as a compex multinomial function of $x$
+
+```{r}
+data %>% ggplot(aes(x = x, y = y_e)) + 
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, 
+              se = FALSE, aes(colour = "linear"), linetype = "dashed")  +
+  geom_smooth(method = "lm", formula = y ~ x + poly(x, 2), 
+              se = FALSE, aes(colour = "curvelinear"), linetype = "dotted") +
+  geom_smooth(method = "lm", formula = y ~ x + poly(x, 20), 
+              se = FALSE, aes(colour = "polynomial"), linetype = "longdash")      
+```
+
+In this case, we clearly se that a linear model is too simple, therefore introduces a lot of bias. The curvelinear model indead approximates the underlying relationship correct, while the curvelinear model indeed presents a better fit to the data at hand but misses the underlying relationship. It most likely would perform worse on new data subject to the same random variation.
+
+### Regularization
+The process of minimizing bias and variance errors is called **regularization** (inpractice also refered to as **hyperparameter-tuning**), where we aim at selecting the right model class, functional form, and degree of complexity to jointly minimize in-sample loss but also between-sample variations.
+
+![](https://www.dropbox.com/s/k9eci9w2xqtw3bc/bias_variance2.png?dl=1){width=750px}
+
+Mathematically speaking, we try to minimize a loss function $L(.)$ (eg. RMSE) the following problem:
 
 $$minimize \underbrace{\sum_{i=1}^{n}L(f(x_i),y_i),}_{in-sample~loss} ~ over \overbrace{~ f \in F ~}^{function~class} subject~to \underbrace{~ R(f) \leq c.}_{complexity~restriction}$$
 
 
-
-# Regression
+# ML for regression problems
 
 ## Introduction (a brief reminder)
 
@@ -153,14 +181,41 @@ $$y = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + ... + \beta_n x_n + \epsilon $$
 
 And that is what happens. Lets imagine we plot some feature against an outcome we want to predict. OLS will just fit a straight line through your data.
 
-![](media/m8_reg1.png#center){width=500px}
+![](https://www.dropbox.com/s/3v5qka4630kqq6m/reg1.png?dl=1){width=500px}
 
 We do so by minimizing the sum of (squared) errors between our prediction-line and the observed outcome.
 
-![](media/m8_reg2.png#center){width=500px}
+![](https://www.dropbox.com/s/1uqge38zhj12sxn/reg2.png?dl=1){width=500px}
+
+Let' do a brief example for a simple linear model. We generate some data, where $y$ is a linear function of $x$ plus some random error.
+
+```{r}
+data <- tibble(x = runif(500, min = 0, max = 100),
+               y = 15 + (x*0.3) + rnorm(500, sd = 5))
+
+data %>% ggplot(aes(x = x, y = y)) + 
+  geom_point()
+```
+
+We can now fit a linear regression model that aims at discovering the underlying relationship.
+
+```{r}
+res_lm <- lm(formula = y ~ x, data = data)
+res_lm %>% summary()
+```
+
+We see it got the underlying relationship somewhat correct. Keep in mind, its ability to discover it is also limited by the small sample, where small random errors dan bias the result.
+
+Note: This is exactly what `geom_smooth()` in `ggplot` does when giving it the `method="lm"` parameter. Lets take a look at it visually.
+
+```{r}
+data %>% ggplot(aes(x = x, y = y)) + 
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, se = TRUE)
+```
+
 
 ### Executing a regression
-
 So, lets get your hand dirty. We will load a standard dataset from `mlbench`, the BostonHousing dataset. It comes as a dataframe with 506 observations on 14 features, the last one `medv` being the outcome:
 
 * `crim`	per capita crime rate by town
@@ -185,28 +240,33 @@ These data have been taken from the [UCI Repository Of Machine Learning Database
 ```{r}
 library(mlbench) # Library including many ML benchmark datasets
 data(BostonHousing) 
-data <- BostonHousing %>% as_data_frame()
+data <- BostonHousing %>% as_tibble()
 rm(BostonHousing)
 
 data %<>%
   select(medv, everything()) %>%
-  mutate(chas = as.numeric(chas))
+  mutate(chas = chas %>% as.numeric())
 ```
 
 Lets inspect the data for a moment.
 
 ```{r}
 head(data)
-glimpse(data)
-skim(data) %>% skimr::kable()
 ```
 
+```{r}
+data %>% glimpse()
+```
+
+```{r}
+data %>% summary()
+```
 
 Ok, us straight run our first linear model with the `lm()` function:
 
 ```{r}
 fit.lm <- lm(medv ~ ., data = data)
-summary(fit.lm)  
+fit.lm %>% summary()  
 ```
 
 So, how would you interpret the results? Estimate? P-Value? $R^2$? If you don't know, consider taking the SDS track on Datacamp for statistics basics.
@@ -214,15 +274,15 @@ So, how would you interpret the results? Estimate? P-Value? $R^2$? If you don't 
 However, since this is a predictive exercise, we are foremost interested in how well the model predicts. So, lets use the `predict()` function.
 
 ```{r}
-pred.lm <- predict(fit.lm) 
-head(pred.lm, 10)
+pred.lm <- fit.lm %>% predict() 
+pred.lm %>% head()
 ```
 
-A common measure of predictive power of regresdsions models is the *Root-Mean-Squared-Error* (RSME), calculate as follows:
+A common measure of predictive power of regressions models is the *Root-Mean-Squared-Error* (RSME), calculate as follows:
 
 $$ RMSE = \sqrt{\frac{1}{n}\Sigma_{i=1}^{n}{\Big(y_i - \hat{y_i} \Big)^2}}$$
 
-Keep in mind, this rood&squared thingy does nothing with the error term except of transforming negative to positive values. Lets calculate:
+Keep in mind, this root&squared thingy does nothing with the error term except of transforming negative to positive values. Lets calculate:
 
 ```{r}
 error <-  pull(data, medv) -  pred.lm
@@ -235,7 +295,7 @@ We can also visualize the error term:
 
 ```{r}
 # Some visualizatiom
-error %>% as_data_frame() %>%
+error %>% as_tibble() %>%
   ggplot(aes(value)) + 
   geom_histogram()
 ```
@@ -257,72 +317,57 @@ test <- data[-index,]
 ```
 
 ### Preprocessing
-Before tuning the models, there is still some final preprocessing to do. For typical preprocessing tasks for ML, I like to use the `reciepes` package. It lets you conveniently define a recipe of standard ML preprocessing tasks. Afterwards, we can just can use this recipe to "bake" our data, meaning performing all the steps in the recipe. Here, we do only some simple transformations. We normalizizing all numeric data by centering (subtracting the mean) and scaling (divide by standard deviation). Finally, we remove features with zero-variance (we dont have any here, but its a good practice to do that with unknown data).
+Before tuning the models, there is still some final preprocessing to do. For typical preprocessing tasks for ML, I like to use the [`reciepes`](https://tidymodels.github.io/recipes/) package. It lets you conveniently define a recipe of standard ML preprocessing tasks. Afterwards, we can just can use this recipe to "bake" our data, meaning performing all the steps in the recipe. 
 
+Here, we do only some simple transformations. 
+* We normalizizing all numeric data by centering (subtracting the mean) and scaling (divide by standard deviation). 
+* We remove features with zero-variance (we dont have any here, but its a good practice to do that with unknown data).
+
+**Note:** We here also add a simple way to already in the preprocessing deal with missing data. `recipes` has inbuild missing value inputation algorithms, such as "k-nearest-neighbors".
 
 ```{r}
-
 library(recipes)
 reci <- recipe(medv ~ ., data = training) %>%
-  step_center(all_numeric(), -all_outcomes()) %>% 
-  step_scale(all_numeric(), -all_outcomes()) %>%
-  step_zv(all_predictors()) %>%
+  step_center(all_numeric(), -all_outcomes()) %>% # Centers all numeric variables to mean = 0
+  step_scale(all_numeric(), -all_outcomes()) %>% # scales all numeric variables to sd = 1
+  step_zv(all_predictors())  # Removed predictors with zero variance
+
+
+# knn inputation of missing values
+reci %<>%
+  step_knnimpute(all_predictors()) 
+
+# Recipe in the end has to be prepared on the treining data
+reci %<>% 
   prep(data = train)
+```
+
+```{r}
 reci
 ```
 
 
-
 Now we can "bake" our data, executing the recipe, and split in outcomes and features (is not necessary, but usually an easier workflow lateron).
-
 
 ```{r}
 # Training: split in y and x
-x_train <-bake(reci, newdata = training) %>% select(-medv) 
+x_train <-bake(reci, new_data = training) %>% select(-medv) 
 y_train <- training %>% pull(medv)
 
 # test: split in y and x
-x_test <-bake(reci, newdata = test) %>% select(-medv) 
+x_test <-bake(reci, new_data = test) %>% select(-medv) 
 y_test <- test %>% pull(medv)
 ```
-
-
-```{r, include = FALSE}
-rm(reci, training, test)
-```
-
 
 ### Defining the training and control feature
 We now get seriously started with the hyperparameter tuning. We will do so in the following way. We here do a n-fold crossvalidation, meaning that we again split the train sample again in n subsamples, on which we both fit and test every hyperparameter configuration. That minimizes the chance that the results are driven by a particular sampling.  Sounds cumbersome. However, for this workflow caret allows us to automatize this workflow with defining a `trainControl()` object, which we pass to every model we fit lateron.
 
-Here, we have to define a set of parameters. First, the number of crossvalidations. He here for the sake of time do just 2 (`method = "cv", number = 5`), but given enough computing power, RAM and/or time, for a real life calibration, I would recommend 5 or 10 folds. To be even more save, this whole process can be repeated serveral time (`method = "repeatedcv", repeats = x`). Be aware, though, that time increases exponentially, which might make a difference when working with large data.
+Here, we have to define a set of parameters. First, the number of crossvalidations. He here for the sake of time do just 2 (`method = "cv", number = 5`), but given enough computing power, RAM and/or time, for a real life calibration, I would recommend 5 or 10 folds. Be aware, though, that time increases exponentially, which might make a difference when working with large data.
 
 ```{r}
 ctrl <- trainControl(method = "cv", 
                      number = 10)
 ```
-
-
-### Digression: Multicore usage and parallel computing
-Since we here have quite some models to run, lets speed it up by utilizing parallel processing. Me here use the packages `parallel` and `doMC`, which together with caret implement parallel training super easy. So, lets exploit the cores we have on our server.
-
-Note: doMC only properly works on Linux, for windows check out other alternatives. Here, use instead doMC the `doParallel` package and its `registerDoParallel()` function. Note: This one is a bit experimental, and does not always work reliable.
-
-```{r}
-# library(parallel)
-
-# # Linux option
-# library(doMC) # nice package that distributes among others caret train processes (if allowParallel = TRUE)
-# registerDoMC(cores = round(detectCores() - 1) ) # On the server we have 16 cores, I want to leave one for my fellows.
-# getDoParWorkers() # check how many "workers" are deployed
-
-# # Windows option
-# library(doParallel)
-# cl <- parallel::makeCluster(detectCores() - 1)
-# doParallel::registerDoParallel(cl)
-# # Note : In doParallel, you need to stop your cluster when you are done with "parallel::stopCluster(cl)"
-```
-
 
 ## Hyperparameter Tuning
 So, we finally start fitting models. The logit we skip in this phase, since it has no tunable parameters.
@@ -334,14 +379,20 @@ fit.lm <- train(x = x_train,
                 y = y_train, 
                 trControl = ctrl, 
                 method = "lm")
-summary(fit.lm)
+```
+
+```{r}
+fit.lm %>% summary()
+```
+
+```{r}
 fit.lm
 ```
 
 Notice the higher RMSE compared to the initial in-sample testing example.
 
 ### Elastic Net
-The elastic net has the functional form of a generalized linear model, plus an adittional tgerm $\lambda$ a parameter which penalizes the coefficient by its contribution to the models loss in the form of:
+The elastic net has the functional form of a generalized linear model, plus an adittional term $\lambda$ a parameter which penalizes the coefficient by its contribution to the models loss in the form of:
 
 $$\lambda \sum_{p=1}^{P} [ 1 - \alpha |\beta_p| + \alpha |\beta_p|^2]$$
 
@@ -361,13 +412,16 @@ fit.glmnet <- train(x = x_train,
                     trControl = ctrl, 
                     method = "glmnet", family = "gaussian", 
                     tuneGrid = tune.glmnet)
+```
+
+```{r}
 fit.glmnet
 ```
 
-We can also plot the results.
+We can also plot the results of the hyperparameter testing exercise via grid-search. Note: `caret` model resuls already have a predefined plotting setting for `ggplot`.
 
 ```{r}
-ggplot(fit.glmnet)
+fit.glmnet %>% ggplot()
 ```
 
 
@@ -375,7 +429,7 @@ ggplot(fit.glmnet)
 So, taking all together, lets see which model performs best out-of-sample:
 
 ```{r}
-pred.lm <- 
+pred.lm <- predict(fit.glmnet, newdata = x_test) 
 pred.glm <- predict(fit.glmnet, newdata = x_test) 
 
 # RMSE OLS
@@ -383,21 +437,21 @@ sqrt(mean( (y_test - predict(fit.lm, newdata = x_test) ) ^ 2))
 sqrt(mean( (y_test - predict(fit.glmnet, newdata = x_test) ) ^ 2))
 ```
 
-Notice again the higher RMSE for total out-of-sample testing. Here, the results are pretty similar, so we in fact see noa advantage of variable selection via `glmnet`
+Notice again the higher RMSE for total out-of-sample testing. Here, the results are pretty similar, so we in fact see no advantage of variable selection via `glmnet`.
 
 # ML for Classification
 
 ## Introduction
 
-### Reminder: Model assesments and metrics for classification problems
+##  Model assesments and metrics for classification problems
 
 We remeber that the most commonly used performance measure for regression problems is the **RMSE**. However, how to we assess models aimed to solve classification problems? Here, it is not that straightforward, and we could (depending on the task) use different ones.
 
-#### The Confusion matrix and its metrics
+### The Confusion matrix and its metrics
 
 The **Confusion Matrix** (in inferential statistics you would call it **Classification Table**, so don't get confused) is the main source 
 
-![](media/m8_cf1.jpg){width=750px}
+![](https://www.dropbox.com/s/dn1juxbdfm8ryi8/cf1.jpg?dl=1){width=750px}
 
 It is the 2x2 matrix with the foillowing cells:
 
@@ -416,7 +470,7 @@ It is the 2x2 matrix with the foillowing cells:
 
 Just remember, We describe predicted values as **Positive** and **Negative** and actual values as **True** and **False**. Out of combinations of these values, we dan derive a set of different quality measures.
 
-![](media/m8_metrics2.png){width=750px}
+![](https://www.dropbox.com/s/dcoa3pumpcrchsp/metrics2.png?dl=1){width=750px}
 
 **Accuracy** (ACC)
 $$ {ACC} ={\frac {\mathrm {TP} +\mathrm {TN} }{P+N}}={\frac {\mathrm {TP} +\mathrm {TN} }{\mathrm {TP} +\mathrm {TN} +\mathrm {FP} +\mathrm {FN} }} $$
@@ -433,40 +487,70 @@ $$ {PPV} ={\frac {\mathrm {TP} }{\mathrm {TP} +\mathrm {FP} }} $$
 **F1 score**: is the harmonic mean of precision and sensitivity, meaning a weighted average of the true positive rate (recall) and precision.
 $$ F_{1}=2\cdot {\frac {\mathrm {PPV} \cdot \mathrm {TPR} }{\mathrm {PPV} +\mathrm {TPR} }}={\frac {2\mathrm {TP} }{2\mathrm {TP} +\mathrm {FP} +\mathrm {FN} }} $$
 
-So, which one should we use? Answer is: Depends on the problem. Are you more sensitive towards false negative or false positives? Do you have a balanced or unbalanced distribution of classes? Think about it for a moment.
+So, which one should we use? Answer is: Depends on the problem. Are you more sensitive towards false negative or false positives? Do you have a balanced or unbalanced distribution of classes? How high is the importance of false positives compared to false negatives? Think about it for a moment.
+
+Lets do a minimal example. We create again a simple dataframe:
+
+```{r}
+data <- tibble(
+  x = runif(50, min = 0, max = 1),
+  y = 0.1 + x*0.8 + rnorm(50, sd = 0.1)
+  )
+
+# Code y binary
+data %<>%
+  mutate(y = ifelse(y > 0.5, "Yes", "No") %>% as.factor())
+```
+
+```{r}
+data %>%
+  ggplot(aes(x = x, y = y)) +
+  geom_point()
+```
+
+We now fit a simple logistic regression. We can again use `glm`, this time only with argument `family = binomial`.
+
+```{r}
+fit_log <- glm(formula = y ~ x, family = binomial, data = data)
+```
+
+```{r}
+fit_log %>% summary()
+```
+
+Lets plot the model:
+
+```{r}
+data %>%
+ggplot(aes(x = x, y = y)) + 
+  geom_point() + 
+  stat_smooth(method="glm", method.args=list(family="binomial"), se=TRUE)
+```
+
+```{r}
+pred_log <- predict(fit_log, type = "response")
+pred_log <- ifelse(pred_log > 0.5, "Yes", "No") %>% as.factor()
+```
+
+Lets take a look at the confusion matrix (`caret` function):
+
+```{r}
+confusionMatrix(data$y, pred_log, positive = "Yes")
+```
+
+Wow, all correct, what a great model! Or... ?
 
 
-#### ROC and AUC
-An ROC curve (receiver operating characteristic curve, weird name, i know. Comes originally from signal processing) is a derivative of the confusion matrix and predicted class-probabilities.
+# Case Study: Classification of Customer Churn
 
-![](media/m8_cf2.jpg){width=750px}
+![](https://www.dropbox.com/s/mntme31mtkri2kr/churn.jpg?dl=1){width=750px}
 
-So, what does it tell us? The ROC is a graph showing the performance of a classification model at all classification thresholds.  It plots TPR vs. FPR at different classification thresholds. Lowering the classification threshold classifies more items as positive, thus increasing both False Positives and True Positives. 
-
-![](media/m8_roc1.png){width=750px}
-
-**AUC** stands for "Area under the ROC Curve." That is, AUC measures the entire two-dimensional area underneath the entire ROC curve (think integral calculus) from (0,0) to (1,1). It provides an aggregate measure of performance across all possible classification thresholds. One way of interpreting AUC is as the probability that the model ranks a random positive example more highly than a random negative example. AUC ranges in value from 0 to 1. A model whose predictions are 100% wrong has an AUC of 0.0; one whose predictions are 100% correct has an AUC of 1.0.
-
-AUC is desirable for the following two reasons:
-
-1. AUC is scale-invariant. It measures how well predictions are ranked, rather than their absolute values.
-2. AUC is classification-threshold-invariant. It measures the quality of the model's predictions irrespective of what classification threshold is chosen.
-
-However, both these reasons come with caveats, which may limit the usefulness of AUC in certain use cases:
-
-* Scale invariance is not always desirable. For example, sometimes we really do need well calibrated probability outputs, and AUC won't tell us about that.
-* Classification-threshold invariance is not always desirable. In cases where there are wide disparities in the cost of false negatives vs. false positives, it may be critical to minimize one type of classification error. For example, when doing email spam detection, you likely want to prioritize minimizing false positives (even if that results in a significant increase of false negatives). AUC isn't a useful metric for this type of optimization.
-
-## Introduction tom the case
-
-![](media/m8_churn.jpg){width=750px}
-
-### Digression: Customer Churn: Hurts Sales, Hurts Company
+## Introduction: Customer Churn: Hurts Sales, Hurts Company
 Customer churn refers to the situation when a customer ends their relationship with a company, and it's a costly problem. Customers are the fuel that powers a business. Loss of customers impacts sales. Further, it's much more difficult and costly to gain new customers than it is to retain existing customers. As a result, organizations need to focus on reducing customer churn.
 
 The good news is that machine learning can help. For many businesses that offer subscription based services, it's critical to both predict customer churn and explain what features relate to customer churn. 
 
-### IBM Watson Dataset 
+## Data: IBM Watson Dataset 
 We now dive into the IBM Watson Telco Dataset. According to IBM, the business challenge is.
 
 > A telecommunications company [Telco] is concerned about the number of customers leaving their landline business for cable competitors. They need to understand who is leaving. Imagine that you're an analyst at this company and you have to find out who is leaving and why.
@@ -480,18 +564,20 @@ The dataset includes information about:
 Lets load it:
 ```{r}
 rm(list=ls()); graphics.off() # get rid of everything in the workspace
-data <- readRDS("data/telco_churn.rds")
+data <- readRDS(url("https://www.dropbox.com/s/zlqt05ugivl627a/telco_churn.rds?dl=1")) # notice that for readRDS i have to wrap the adress in url()
 ```
 
 
 ## Data Inspection, exploration, preprocessing
 
-Lets inspect our data
+Lets inspect our data:
 
 ```{r}
-head(data)
-glimpse(data)
-skim(data) %>% skimr::kable()
+data %>% head()
+```
+
+```{r}
+data %>% glimpse()
 ```
 
 
@@ -504,12 +590,10 @@ data %<>%
   select(Churn, everything())
 ```
 
-
-Next, lets have a first visual inspections. Many models in our prediction exercise to follow require the conditional distribution of the features to be different for the outcomes states to be predicted. So, lets take a look. Here, `ggplot2` plus the `ggridges` package is my favorite.
-
+Next, lets have a first visual inspections. Many models in our prediction exercise to follow require the conditional distribution of the features to be different for the outcomes states to be predicted. So, lets take a look. Here, `ggplot2` plus the `ggridges` package is my favorite. It is particularly helpfull when dealing with 
 
 ```{r,fig.height=5,fig.width=12.5}
-require(ggridges)
+library(ggridges)
 data %>%
   gather(variable, value, -Churn) %>%
   ggplot(aes(y = as.factor(variable), 
@@ -518,33 +602,15 @@ data %>%
   geom_density_ridges(alpha = 0.75)
 ```
 
-
 Again, we split in a training and test dataset.
 
 ```{r}
-library(caret)
 index <- createDataPartition(y = data$Churn, p = 0.75, list = FALSE)
 
 training <- data[index,] 
 test <- data[-index,] 
 ```
 
-We already see the numeric variable `TotalCharges` appears to be right skewed. That is not a problem for predictive modeling per se, yet some transformation might increase still its predictive power. Lets see. The easiest approximation is just to check the correlation.
-
-```{r}
-library(corrr)
-training %>%
-  select(Churn, TotalCharges) %>%
-  mutate(
-    Churn = Churn %>% as.factor() %>% as.numeric(),
-    LogTotalCharges = log(TotalCharges)
-  ) %>%
-  correlate() %>%
-  focus(Churn) %>%
-  fashion()
-```
-
-Allright, seems as if it could be worth it. Now we can already write down or recipe.
 
 ```{r}
 library(recipes)
@@ -563,64 +629,60 @@ Now we just split again in predictors and outcomes, bake it all, and we are good
 
 ```{r}
 # Predictors
-x_train <- bake(reci, newdata = training) %>% select(-Churn)
-x_test  <- bake(reci, newdata = test) %>% select(-Churn)
+x_train <- bake(reci, new_data = training) %>% select(-Churn)
+x_test  <- bake(reci, new_data = test) %>% select(-Churn)
 
 # Response variables for training and testing sets
+# Note that we have to code the outcome (churn) here as factor. Will be important later, since most classification models demand factors as outcomes
 y_train <- pull(training, Churn) %>% as.factor()
 y_test  <- pull(test, Churn) %>% as.factor()
 ```
 
-We again define a `trainControl()` object. However, now we need some adittional parameters.
+## Classification
+
+We again define a `trainControl()` object. However, now we need some adittional parameters. In particular, we now need a `twoClassSummary`, and `classProbs` (both mainly for model evaluation lateron)
+
+We will also use another trick. Up to now we defined our own `tinegrid`. This is a good exercise. However, we have a more convenient and efficient way to do so: While this is usually done via a grid-search over all possible combinations, I instead use an adaptive resampling procedure (see [this paper](https://arxiv.org/abs/1405.6974)), which adaptively resamples the tuning parameter grid in a way that concentrates on values that are the in the neighborhood of the optimal settings. 
+
+We therefore also define a `n_tune` value for how often this should be done. This will later be passed on to the `tuneLength` parameter of the `train()` workflow.
 
 ```{r}
-ctrl <- trainControl(method = "repeatedcv", # repeatedcv, boot, cv, LOOCV, timeslice OR adaptive etc.
-                     number = 5, # Number of CV's
-                     repeats = 3, # Number or repeats -> repeats * CV's
+ctrl <- trainControl(method = "cv", # repeatedcv, boot, cv, LOOCV, timeslice OR adaptive etc.
+                     number = 10, # Number of CV's
                      classProbs = TRUE, # Include probability of class prediction
+                     savePredictions = TRUE, # Save the prediction results
                      summaryFunction = twoClassSummary, # Which type of summary statistics to deliver
-                     returnData = FALSE, # Don't include the original data in the train() output
-                     returnResamp = "final", # Impåortant for resampling later
-                     savePredictions = "final", # The predictions of every tune or only the final to be saved?
-                     allowParallel = TRUE, # For parallel processing
-                     verboseIter = FALSE)
+                     verboseIter = FALSE,
+                     # add adaptive resampling for hyperparamether search
+                     adaptive = list(min = 3, 
+                                     alpha = 0.05, 
+                                     method = "gls", 
+                                     complete = TRUE),
+                     search = "random" )
 
-metric <- "ROC" # Which metric should be optimized (more on that later)
+metric <- "Accuracy" # Which metric should be optimized (more on that later)
+n_tune = 10 # number of tuning rounds
 ```
 
+
 ### Standard logistic regression
+
 Lets run the common allrounder first:
 
 ```{r}
-fit.logit <- train(x = x_train, 
-                   y = y_train, 
-                   trControl = ctrl, 
-                   metric = metric,
-                   method = "glm", family = "binomial") 
-fit.logit
-summary(fit.logit)
+fit.log <- train(x = x_train, 
+                 y = y_train, 
+                 trControl = ctrl, 
+                 metric = metric,
+                 method = "glm", family = "binomial") 
 ```
 
-### Elastic net
-We can surely also run an elasticnet with an logit-link (`family = "binomial`). Now, we utulize the caret `train()` function to carry out the grid search as well as crossvalidation of our model. The train function is a wrapper that uses a huge variety (150+) of models from other packages, and carries out the model fitting workflow. Here, we pass the function our feature and outcome vectors (X, y), the parameters in the formerly defined trainControl object, the metric to be optimized, the model class (here "glmnet" from the corresponding package), and our formerly defined tuneGrid. Lets go!
-
 ```{r}
-tune.glmnet = expand.grid(alpha = seq(0, 1, length = 3), 
-                          lambda = seq(0, 0.3, length = 7))
-
-fit.glmnet <- train(x = x_train, 
-                    y = y_train, 
-                    trControl = ctrl, 
-                    metric = metric, 
-                    method = "glmnet", family = "binomial", 
-                    tuneGrid = tune.glmnet)
-fit.glmnet
+fit.log %>% summary()
 ```
 
-We can also plot the results.
-
 ```{r}
-ggplot(fit.glmnet)
+fit.log
 ```
 
 ### Decision tree
@@ -632,14 +694,14 @@ Ok, next we will do the same exercise for a classification tree. Some brief remi
 * Idea: split the population or sample into two or more homogeneous sets (or sub-populations) based on most significant splitter / differentiator in input variables.
 * Repeat till stop criterium reachesd. leads to a tree-like structure.
 
-![](media/m8_regtree0.png){width=750px}
+![](https://www.dropbox.com/s/rhdx8upcikkun7p/regtree0.png?dl=1){width=750px}
 
 This class became increasingly popular in business and other applications. Some reasons are:
+
 * Easy to Understand: Decision tree output is very easy to understand even for people from non-analytical background.
 * Useful in Data exploration: Decision tree is one of the fastest way to identify most significant variables and relation between two or more variables.
 * Data type is not a constraint: It can handle both numerical and categorical variables.
 * Non Parametric Method: Decision tree is considered to be a non-parametric method. This means that decision trees have no assumptions about the space distribution and the classifier structure.
-
 
 Some tree terminology:
 
@@ -648,26 +710,28 @@ Some tree terminology:
 * **Decision Node:** When a sub-node splits into further sub-nodes, then it is called decision node.
 * **Leaf/ Terminal Node:** Nodes do not split is called Leaf or Terminal node.
 
-![](media/m8_regtree2.png){width=750px}
+![](https://www.dropbox.com/s/j5ise9gi226rsnn/regtree2.png?dl=1){width=750px}
 
 
 The decision of making strategic splits heavily affects a tree's accuracy. So, How does the tree decide to split? This is different across the large family of tree-like models. Common approaches:
+
 * Gini Index
 * $\chi^2$ 
 * Reduction in $\sigma^2$
 
 Some common complexity restrictions are:
+
 * Minimum samples for a node split
 * Minimum samples for a terminal node (leaf)
 * Maximum depth of tree (vertical depth)
 * Maximum number of terminal nodes
 * Maximum features to consider for split	
 
-![](media/m8_regtree1.png){width=750px}
+![](https://www.dropbox.com/s/ju3mj0onq8mhp74/regtree1.png?dl=1){width=750px}
 
 Likewise, there are a veriety of tunable hyperparameters across different applications of this model family.
 
-![](media/m8_regtree3.png){width=750px}
+![](mhttps://www.dropbox.com/s/dwl89havzpl1qla/regtree3.png?dl=1){width=750px}
 
 #### Application
 Ok, lets run it! We here use `rpart`, but there is a huge variety available. This one has only one tunable parameter. Here we are able to restrict the complexity via a hyperparameter cp. This parameter represents the complexity costs of every split, and allows further splits only if it leads to an decrease in model loss below this threshold.
@@ -675,16 +739,22 @@ Ok, lets run it! We here use `rpart`, but there is a huge variety available. Thi
 
 ```{r}
 library(rpart)
-tune.dt = expand.grid(cp = c(0.001, 0.005 ,0.010, 0.020, 0.040))
-
 fit.dt <- train(x = x_train, 
                 y = y_train, 
                 trControl = ctrl, 
                 metric = metric,
-                method = "rpart", tuneGrid =  tune.dt) 
-fit.dt
-ggplot(fit.dt)
+                tuneLength = n_tune,
+                method = "rpart") 
 ```
+
+```{r}
+fit.dt
+```
+
+```{r}
+fit.dt %>% ggplot()
+```
+
 
 We directly see that in this case, increasing complexity costs lead to decreasing model performance. Such results are somewhat typical for large datasets, where high complexity costs prevent the tree to fully exploit the richness of information. Therefore, we settle for a minimal cp of 0.001.
 
@@ -692,22 +762,21 @@ We can also plot the final plot structure.
 
 ```{r,fig.width=15,fig.height=5}
 require(rpart.plot)
-rpart.plot(fit.dt$finalModel)
+fit.dt$finalModel %>% rpart.plot()
 ```
 
 This plot is usually informative, and gives us a nice intuition how the prediction works in classification trees. However, with that many dummies, it's a bit messy.
 
-
 ### Random Forest
 
-![](media/m8_rf1.png){width=750px}
+![](https://www.dropbox.com/s/pqtv0wjjplyzwp9/rf1.png?dl=1){width=750px}
 
 #### Introduction
 Finally, we fit another class of models which has gained popularity in the last decade, and proven to be a powerful and versatile prediction technique which performs well in almost every setting, a random forest. It is among the most popular non-neural-network ML algorithms, and by some considered to be a panacea of all data science problems. Some say: "when you can't think of any algorithm (irrespective of situation), use random forest!""
 
 As a continuation of tree-based classification methods, random forests aim at reducing overfitting by introducing randomness via bootstrapping, boosting, and ensemble techniques. It is a type of ensemble learning method, where a group of weak models combine to form a powerful model. The idea here is to create an "ensemble of classification trees"", all grown out of a different bootstrap sample. Having grown a forest of trees, every tree performs a prediction, and the final model prediction is formed by a majority vote of all trees. This idea close to Monte Carlo simulation approaches, tapping in the power of randomness.
 
-![](media/m8_rf2.png){width=750px}
+![](https://www.dropbox.com/s/f0a2afec92awyw0/rf2.png?dl=1){width=750px}
 
 #### Application
 In this case, we draw from a number of tunable hyperparameters. First, we tune the number of randomly selected features which are available candidates for every split on a range $[1,k-1]$, where lower values introduce a higher level of randomness to every split. Our second hyperparameter is the minimal number of observations which have to fall in every split, where lower numbers increase the potential precision of splits, but also the risk of overfitting. Finally, we also use the general splitrule as an hyperparameter, where the choice is between i.) a traditional split according to a the optimization of the gini coefficient of the distribution of classes in every split, and ii.) according to the "Extremely randomized trees"" (`ExtraTree`) procedure by Geurts (2016), where adittional randomness is introduced to the selection of splitpoints.
@@ -716,147 +785,68 @@ Note: We here use the `ranger` instead of the more popular `randomforest` packag
 
 ```{r}
 library(ranger)
-tune.rf <- expand.grid(mtry = round(seq(1, ncol(x_train)-1, length = 3)),
-                       min.node.size = c(10, 50, 100),
-                       splitrule = c("gini", "extratrees") )
+#tune.rf <- expand.grid(mtry = round(seq(1, ncol(x_train)-1, length = 3)),
+#                       min.node.size = c(10, 50, 100),
+#                       splitrule = c("gini", "extratrees") )
                        
 fit.rf <- train(x = x_train, 
                 y = y_train, 
                 trControl = ctrl,  
                 metric = metric,
+                tuneLength = n_tune,
                 method = "ranger", 
                 importance = "impurity", # To define how to measure variable importantce (later more)
-                num.trees = 25,
-                tuneGrid =  tune.rf) 
+                num.trees = 25
+                )
+```
+
+```{r}
 fit.rf
-ggplot(fit.rf)
+```
+
+```{r}
+fit.rf %>% ggplot()
 ```
 
 we see that number of randomly selected features per split of roughly half of all available features in all cases maximizes model performance. Same goes for a high minimal number of observations (100) per split. Finally, the ExtraTree procedure first underperforms at a a minimal amount of randomly selected features, but outperforms the traditional gini-based splitrule when the number of available features increases. Such results are typical for large samples, where a high amount of injected randomness tends to make model predictions more robust.
 
-
-## Final prediction
-
-The adittional `caretEnsemble` package also has the `caretList()` function, where one can fit a set of different models jointly. In adittion, it takes care of the indexing for the resamples, so that they are the same for al models. Neath, isnt it? We could have done just and only that from the very beginning. We just did seperate models for illustration before. Note: Be prepared to wait some time.
-
-```{r}
-library(caretEnsemble)
-models <- caretList(x = x_train, 
-                    y = y_train, 
-                    trControl = ctrl, 
-                    metric = metric, 
-                    continue_on_fail = T,
-                    tuneList = list(logit = caretModelSpec(method = "glm", 
-                                                           family = "binomial"),
-                                   elasticnet = caretModelSpec(method = "glmnet", 
-                                                               family = "binomial",
-                                                               tuneGrid =  tune.glmnet),
-                                   dt = caretModelSpec(method = "rpart",
-                                                       tuneGrid =  tune.dt),
-                                   rf = caretModelSpec(method = "ranger", 
-                                                       importance = "impurity", 
-                                                       num.trees = 25, 
-                                                       tuneGrid =  tune.rf)   
-                                   ) 
-                    )
-```
-
-
-## Performance Evaluation
-And done. Now, lets evaluate the results. This evaluation is now on the average prediction of the different folds on the validation fold in the train data (final evaluation will still come later). Lets take a look. We can also plot the model comparison.
-
-```{r}
-models
-```
-
-The last step is to recollect the results from each model and compare them. We here use the `resamples()` function of caret. This can be done because we ran all models within a `caretList`, keeping track of all resamples within the different models and enabling us to compare them. Lets check how the model perform.
-
-```{r}
-results <- resamples(models) 
-
-results$values %>%
-  select(-Resample) %>%
-  tidy()
-
-bwplot(results)
-```
-
-Lets see how similar the models predict on the validation sample.
-
-```{r}
-modelCor(results) 
-```
-
-
-
 ## Evaluation via final out-of-sample prediction
-Ok, to be as confident as possible, lets do the final evaluation. generally, many ML exercises can be done without it, and it is often common practice to go with the performance in the k-fold crossfalidation. However, I believe this final step should be done, if data permits. Only with this final prediction we expose our model to data it yet was not exposed to, neiter directly nor indirectly. 
+Ok, we by now tuned three different models with varying complexity. To be sure how they perform on new data, we now put them to the test to predict `churn` in the 
 
-we first let all models predict all models do their prediction on "test". We create 2 objects, one for the probability prediction (`type = "prob"`), and one for the predicted class of the outcome (where positive means $P \leq 0.5$). We do so, becuase we need both for different summaries to come.
+lets do the final evaluation. generally, many ML exercises can be done without it, and it is often common practice to go with the performance in the k-fold crossfalidation. However, I believe this final step should be done, if data permits. Only with this final prediction we expose our model to data it yet was not exposed to, neiter directly nor indirectly. 
 
-```{r}
-models.preds <- data.frame(lapply(models, predict, newdata = x_test)) 
-models.preds.prob <- data.frame(lapply(models, predict, newdata = x_test, type = "prob"))
-glimpse(models.preds)
-glimpse(models.preds.prob)
-```
-
-Let's plot the corresponding confusion matrix for all models
-
-```{r,fig.height=10,fig.width=10}
-cm <- list()
-cm$logit <- confusionMatrix(factor(models.preds$logit), y_test, positive = "Yes")
-cm$elasticnet <- confusionMatrix(factor(models.preds$elasticnet), y_test, positive = "Yes")
-cm$dt <- confusionMatrix(factor(models.preds$dt), y_test, positive = "Yes")
-cm$rf <- confusionMatrix(factor(models.preds$rf), y_test, positive = "Yes")
-
-par(mfrow=c(2,2)) # Note: One day find a neath way to make it prettier
-for(i in 1:length(cm)) {fourfoldplot(cm[[i]]$table, color = c("darkred", "darkgreen") ); title(main = names(cm[i]), cex.main = 1.5)}
-
-```
-
-And also the corresponding ROC curve...
-
-```{r,fig.height=10,fig.width=10}
-library(caTools)
-# Note: Is kind of ugly. At one point I will try making it prettier with the library "plotROC""
-ROC <- list()
-ROC$logit <- colAUC(models.preds.prob$logit.Yes, y_test, plotROC = F)
-ROC$elasticnet <- colAUC(models.preds.prob$elasticnet.Yes, y_test, plotROC = F)
-ROC$dt <- colAUC(models.preds.prob$dt.Yes, y_test, plotROC = F)
-ROC$rf <- colAUC(models.preds.prob$rf.Yes, y_test, plotROC = F)
-
-par(mfrow=c(2,2))
-for(i in 1:length(ROC)) {colAUC(models.preds.prob[[i*2]], y_test, plotROC = T); title(main = names(ROC[i]), cex.main = 1.5)}
-```
-
-So, now only one nice final table for the sake of overview.
+we first let all models predict all models do their prediction on "test". 
+**Note:** We here predicted class of the outcome (where positive means $P \leq 0.5$). To instead report the predicted probabilitym use the argument `type = "prob"`).
 
 ```{r}
-model_eval <- tidy(cm$logit$overall) %>%
-  select(names) %>%
-  mutate(Logit = round(cm$logit$overall,3) ) %>%
-  mutate(ElasticNet = round(cm$elasticnet$overall,3)) %>%
-  mutate(ClassTree = round(cm$dt$overall,3)) %>%
-  mutate(RandForest = round(cm$rf$overall,3)) 
-
-model_eval2 <- tidy(cm$logit$byClass) %>%
-  select(names) %>%
-  mutate(Logit = round(cm$logit$byClass,3) ) %>%
-  mutate(ElasticNet = round(cm$elasticnet$byClass,3)) %>%
-  mutate(ClassTree = round(cm$dt$byClass,3)) %>%
-  mutate(RandForest = round(cm$rf$byClass,3)) %>%
-  filter( !(names %in% c("AccuracyPValue", "McnemarPValue")) ) 
-
-model_eval_all <- model_eval %>%
-  rbind(model_eval2) %>%
-  rbind(c("AUC", round(ROC$logit,3), round(ROC$elasticnet,3), round(ROC$dt,3), round(ROC$rf,3) ))
-
-model_eval_all
-rm(model_eval, model_eval2)
+pred.log <- predict(fit.log, newdata = x_test)
+pred.dt <- predict(fit.dt, newdata = x_test)
+pred.rf <- predict(fit.rf, newdata = x_test)
 ```
+
+```{r}
+pred.log %>% head()
+```
+
+Now, 
+
+```{r}
+print("====== Out-of-Sample Validation: Logistic Regression ======")
+confusionMatrix(pred.log, y_test, positive = "Yes")
+print("====== Out-of-Sample Validation: Decision Tree ======")
+confusionMatrix(pred.dt, y_test, positive = "Yes")
+print("====== Out-of-Sample Validation: Random Forest ======")
+confusionMatrix(pred.rf, y_test, positive = "Yes")
+```
+
 
 # Your turn
-So, it's time to predict something: [---> HERE <---](https://www.kaggle.com/danielhain/sds-2018-m1-8-supervised-ml-exercise-1). More info's can be found  [---> HERE <---](https://www.kaggle.com/uciml/red-wine-quality-cortez-et-al-2009) (YEs, it's a kaggle set). Go and find a clever way to predict whine quality! :) 
+So, it's time to predict something! Please do **Exercise 1** in the corresponding section on `Github`.
+Go and find a clever way to predict whine quality! :) 
 
+# Endnotes
+
+```{r}
+sessionInfo()
+````
 

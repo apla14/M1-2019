@@ -40,7 +40,7 @@
      
 ### Unsupervised ML - Intermediate Case Studies [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/SDS_M1_S6.ipynb#offline=true&sandboxMode=true)
 
-## Part II: Supervised Machine Learning
+## Part III: Supervised Machine Learning
 
 ### [Supervised ML (in R)](https://raw.githack.com/SDS-AAU/M1-2019/master/notebooks/M1_7_supervised_ml.html)                            [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/M1_7_supervised_ml.ipynb#offline=true&sandboxMode=true)
 * Exercises

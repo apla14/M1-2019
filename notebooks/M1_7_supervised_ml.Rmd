@@ -731,7 +731,7 @@ Some common complexity restrictions are:
 
 Likewise, there are a veriety of tunable hyperparameters across different applications of this model family.
 
-![](mhttps://www.dropbox.com/s/dwl89havzpl1qla/regtree3.png?dl=1){width=750px}
+![](https://www.dropbox.com/s/dwl89havzpl1qla/regtree3.png?dl=1){width=750px}
 
 #### Application
 Ok, lets run it! We here use `rpart`, but there is a huge variety available. This one has only one tunable parameter. Here we are able to restrict the complexity via a hyperparameter cp. This parameter represents the complexity costs of every split, and allows further splits only if it leads to an decrease in model loss below this threshold.
@@ -755,8 +755,6 @@ fit.dt
 fit.dt %>% ggplot()
 ```
 
-
-We directly see that in this case, increasing complexity costs lead to decreasing model performance. Such results are somewhat typical for large datasets, where high complexity costs prevent the tree to fully exploit the richness of information. Therefore, we settle for a minimal cp of 0.001.
 
 We can also plot the final plot structure.
 

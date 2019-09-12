@@ -50,6 +50,9 @@
     
 # Further Resources
 
+## Asignments
+- Solution Assignment 1 (py): https://colab.research.google.com/drive/180PbNAfJyeo-N-bJul77J4Mz0lkIY7wW
+
 ## Tutorials & Knowledge
 
 ### Datascience in R

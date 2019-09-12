@@ -53,8 +53,8 @@
 ## Asignments
 * Assignment 1
 
-  * Solution Assignment 1 (py): [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/180PbNAfJyeo-N-bJul77J4Mz0lkIY7wW#offline=true&sandboxMode=true) 
-  *Solution Assignment 1 (R): [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/exercises/M1_assignment_1_solution_R.ipynb#offline=true&sandboxMode=true) 
+    * Solution (py): [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/180PbNAfJyeo-N-bJul77J4Mz0lkIY7wW#offline=true&sandboxMode=true) 
+    *Solution (R): [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/exercises/M1_assignment_1_solution_R.ipynb#offline=true&sandboxMode=true) 
 
 ## Tutorials & Knowledge
 

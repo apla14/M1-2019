@@ -47,6 +47,8 @@
 
     * Exercise 1: Wine Classification [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/exercises/M1_7_supervised_ml_ex1.ipynb#offline=true&sandboxMode=true)
     
+    * Live coding - Supervised ML in Python (under development) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-ImD0HTcwAO-hJ1h9Y0uogMoZWB1rCIL#offline=true&sandboxMode=true)
+    
     
 # Further Resources
 

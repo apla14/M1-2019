@@ -34,7 +34,8 @@ pacman::p_load(tidyverse, magrittr,
                rpart, # For decision tree models
                GGally, # For nice ggplot summaries
                ggridges, # ggplot addon for plotting nice multiple conditional density distributions
-               mlbench # Collection on ML datasets
+               mlbench, # Collection on ML datasets
+               vip # For variable importance calculation
                )
 ```
 
@@ -265,8 +266,8 @@ data %>% summary()
 Ok, us straight run our first linear model with the `lm()` function:
 
 ```{r}
-fit.lm <- lm(medv ~ ., data = data)
-fit.lm %>% summary()  
+fit_lm <- lm(medv ~ ., data = data)
+fit_lm %>% summary()  
 ```
 
 So, how would you interpret the results? Estimate? P-Value? $R^2$? If you don't know, consider taking the SDS track on Datacamp for statistics basics.
@@ -274,8 +275,8 @@ So, how would you interpret the results? Estimate? P-Value? $R^2$? If you don't 
 However, since this is a predictive exercise, we are foremost interested in how well the model predicts. So, lets use the `predict()` function.
 
 ```{r}
-pred.lm <- fit.lm %>% predict() 
-pred.lm %>% head()
+pred_lm <- fit_lm %>% predict() 
+pred_lm %>% head()
 ```
 
 A common measure of predictive power of regressions models is the *Root-Mean-Squared-Error* (RSME), calculate as follows:
@@ -285,7 +286,7 @@ $$ RMSE = \sqrt{\frac{1}{n}\Sigma_{i=1}^{n}{\Big(y_i - \hat{y_i} \Big)^2}}$$
 Keep in mind, this root&squared thingy does nothing with the error term except of transforming negative to positive values. Lets calculate:
 
 ```{r}
-error <-  pull(data, medv) -  pred.lm
+error <-  pull(data, medv) -  pred_lm
 
 # Calculate RMSE
 sqrt(mean(error ^ 2))
@@ -375,18 +376,19 @@ So, we finally start fitting models. The logit we skip in this phase, since it h
 ### Linear Regression
 
 ```{r}
-fit.lm <- train(x = x_train, 
+fit_lm <- train(x = x_train, 
                 y = y_train, 
                 trControl = ctrl, 
-                method = "lm")
+                method = "glm",
+                family = "gaussian")
 ```
 
 ```{r}
-fit.lm %>% summary()
+fit_lm %>% summary()
 ```
 
 ```{r}
-fit.lm
+fit_lm
 ```
 
 Notice the higher RMSE compared to the initial in-sample testing example.
@@ -399,29 +401,29 @@ $$\lambda \sum_{p=1}^{P} [ 1 - \alpha |\beta_p| + \alpha |\beta_p|^2]$$
 Here, we have 2 tunable parameters, $\lambda$ and $\alpha$.  If $\alpha = 0$, we are left with $|\beta_i|$, turning it to a lately among econometricians very popular **Least Absolute Shrinkage and Selection Operator** (LASSO) regression. Obviously, when $\lambda = 0$, the whole term vanishes, and we are again left with a generalized linear model. The first thing we do now is to set up a tuneGrid, a matrix of value combinations of tunable hyperparameters we aim at optimizing. This is easily done with the base-R `expand.grid()` function.
 
 ```{r}
-tune.glmnet = expand.grid(alpha = seq(0, 1, length = 5), 
+tune_glmnet = expand.grid(alpha = seq(0, 1, length = 5), 
                           lambda = seq(0, 1, length = 5))
-tune.glmnet
+tune_glmnet
 ```
 
 Now, we utulize the caret `train` function to carry out the grid search as well as crossvalidation of our model. The train function is a wrapper that uses a huge variety (150+) of models from other packages, and carries out the model fitting workflow. Here, we pass the function our feature and outcome vectors (X, y), the parameters in the formerly defined trainControl object, the metric to be optimized, the model class (here "glmnet" from the corresponding package), and our formerly defined tuneGrid. Lets go!
 
 ```{r}
-fit.glmnet <- train(x = x_train, 
+fit_glmnet <- train(x = x_train, 
                     y = y_train, 
                     trControl = ctrl, 
                     method = "glmnet", family = "gaussian", 
-                    tuneGrid = tune.glmnet)
+                    tuneGrid = tune_glmnet)
 ```
 
 ```{r}
-fit.glmnet
+fit_glmnet
 ```
 
 We can also plot the results of the hyperparameter testing exercise via grid-search. Note: `caret` model resuls already have a predefined plotting setting for `ggplot`.
 
 ```{r}
-fit.glmnet %>% ggplot()
+fit_glmnet %>% ggplot()
 ```
 
 
@@ -429,12 +431,12 @@ fit.glmnet %>% ggplot()
 So, taking all together, lets see which model performs best out-of-sample:
 
 ```{r}
-pred.lm <- predict(fit.glmnet, newdata = x_test) 
-pred.glm <- predict(fit.glmnet, newdata = x_test) 
+pred_lm <- predict(fit_glmnet, newdata = x_test) 
+pred_glmnet <- predict(fit_glmnet, newdata = x_test) 
 
 # RMSE OLS
-sqrt(mean( (y_test - predict(fit.lm, newdata = x_test) ) ^ 2))
-sqrt(mean( (y_test - predict(fit.glmnet, newdata = x_test) ) ^ 2))
+sqrt(mean( (y_test - predict(fit_lm, newdata = x_test) ) ^ 2))
+sqrt(mean( (y_test - predict(fit_glmnet, newdata = x_test) ) ^ 2))
 ```
 
 Notice again the higher RMSE for total out-of-sample testing. Here, the results are pretty similar, so we in fact see no advantage of variable selection via `glmnet`.
@@ -670,7 +672,7 @@ n_tune = 10 # number of tuning rounds
 Lets run the common allrounder first:
 
 ```{r}
-fit.log <- train(x = x_train, 
+fit_log <- train(x = x_train, 
                  y = y_train, 
                  trControl = ctrl, 
                  metric = metric,
@@ -678,11 +680,11 @@ fit.log <- train(x = x_train,
 ```
 
 ```{r}
-fit.log %>% summary()
+fit_log %>% summary()
 ```
 
 ```{r}
-fit.log
+fit_log
 ```
 
 ### Decision tree
@@ -739,7 +741,7 @@ Ok, lets run it! We here use `rpart`, but there is a huge variety available. Thi
 
 ```{r}
 library(rpart)
-fit.dt <- train(x = x_train, 
+fit_dt <- train(x = x_train, 
                 y = y_train, 
                 trControl = ctrl, 
                 metric = metric,
@@ -748,11 +750,11 @@ fit.dt <- train(x = x_train,
 ```
 
 ```{r}
-fit.dt
+fit_dt
 ```
 
 ```{r}
-fit.dt %>% ggplot()
+fit_dt %>% ggplot()
 ```
 
 
@@ -760,7 +762,7 @@ We can also plot the final plot structure.
 
 ```{r,fig.width=15,fig.height=5}
 require(rpart.plot)
-fit.dt$finalModel %>% rpart.plot()
+fit_dt$finalModel %>% rpart.plot()
 ```
 
 This plot is usually informative, and gives us a nice intuition how the prediction works in classification trees. However, with that many dummies, it's a bit messy.
@@ -787,7 +789,7 @@ library(ranger)
 #                       min.node.size = c(10, 50, 100),
 #                       splitrule = c("gini", "extratrees") )
                        
-fit.rf <- train(x = x_train, 
+fit_rf <- train(x = x_train, 
                 y = y_train, 
                 trControl = ctrl,  
                 metric = metric,
@@ -799,11 +801,11 @@ fit.rf <- train(x = x_train,
 ```
 
 ```{r}
-fit.rf
+fit_rf
 ```
 
 ```{r}
-fit.rf %>% ggplot()
+fit_rf %>% ggplot()
 ```
 
 we see that number of randomly selected features per split of roughly half of all available features in all cases maximizes model performance. Same goes for a high minimal number of observations (100) per split. Finally, the ExtraTree procedure first underperforms at a a minimal amount of randomly selected features, but outperforms the traditional gini-based splitrule when the number of available features increases. Such results are typical for large samples, where a high amount of injected randomness tends to make model predictions more robust.
@@ -817,25 +819,68 @@ we first let all models predict all models do their prediction on "test".
 **Note:** We here predicted class of the outcome (where positive means $P \leq 0.5$). To instead report the predicted probabilitym use the argument `type = "prob"`).
 
 ```{r}
-pred.log <- predict(fit.log, newdata = x_test)
-pred.dt <- predict(fit.dt, newdata = x_test)
-pred.rf <- predict(fit.rf, newdata = x_test)
+pred_log <- predict(fit_log, newdata = x_test)
+pred_dt <- predict(fit_dt, newdata = x_test)
+pred_rf <- predict(fit_rf, newdata = x_test)
 ```
 
 ```{r}
-pred.log %>% head()
+pred_log %>% head()
 ```
 
 Now, 
 
 ```{r}
 print("====== Out-of-Sample Validation: Logistic Regression ======")
-confusionMatrix(pred.log, y_test, positive = "Yes")
+confusionMatrix(pred_log, y_test, positive = "Yes")
 print("====== Out-of-Sample Validation: Decision Tree ======")
-confusionMatrix(pred.dt, y_test, positive = "Yes")
+confusionMatrix(pred_dt, y_test, positive = "Yes")
 print("====== Out-of-Sample Validation: Random Forest ======")
-confusionMatrix(pred.rf, y_test, positive = "Yes")
+confusionMatrix(pred_rf, y_test, positive = "Yes")
 ```
+
+# Model explainability
+Machine learning (ML) models are often considered black boxes due to their complex inner-workings. More advanced ML models such as random forests, gradient boosting machines (GBM), artificial neural networks (ANN), among others are typically more accurate for predicting nonlinear, faint, or rare phenomena. Unfortunately, more accuracy often comes at the expense of interpretability, and interpretability is crucial for business adoption, model documentation, regulatory oversight, and human acceptance and trust. Luckily, several advancements have been made to aid in interpreting ML models.
+
+![](https://www.dropbox.com/s/r5w3o80q3k3prdm/interpret.png?dl=1){width=750px}
+
+Moreover, it's often important to understand the ML model that you've trained on a global scale, and also to zoom into local regions of your data or your predictions and derive local explanations. 
+
+* **Global interpretations** help us understand the inputs and their entire modeled relationship with the prediction target, but global interpretations can be highly approximate in some cases. 
+* **Local interpretation** help us understand model predictions for a single row of data or a group of similar rows.
+
+
+## Global explanation
+Finally, let's get a feeling what variables the models mostly draw from. There are numerous ways for such inspections, in which we will dewll deeper in later lectures. Here, I just want to present the most intuitive and common one, **Variable Importance**.
+
+Most (but not all) model classes offer some possibility to derive measures of variable importance. Note, this is currently not implemented for SVMs. Again, in most ML models and setups, these meastures are nice to give a rough intuition, but CANNOT be interpreted as constant marginal effects, left alone causal.
+
+```{r,fig.height=7.5,fig.width=12.5}
+library(vip)
+```
+
+```{r}
+vip(fit_log) + ggtitle("VarImp: Logistic Regression")
+```
+
+```{r}
+vip(fit_dt) + ggtitle("VarImp: Decision Tree")
+```
+
+```{r}
+vip(fit_rf) + ggtitle("VarImp: Random Forest")
+```
+
+## Local interpretations
+In complex nonparametric models, it is often more helpful to get explanations why a certain datapoint is classified in the way it is than to look at the overall importance of variables. 
+
+
+
+**Local Interpretable Model-agnostic Explanations** (LIME) is a visualization technique that helps explain individual predictions. As the name implies, it is model agnostic so it can be applied to any supervised regression or classification model. There is a neath `R` implementation in the [`lime`](https://github.com/thomasp85/lime) package. If you want to investigate further, feel free! Otherwise, keep in mind this exists, we will come back to it again in later lectures.
+
+BTW: The original paper is mindblowing, if you find time, just read it!
+
+* Marco Tulio Ribeiro, Sameer Singh, and Carlos Guestrin. 2016. ""hy Should I Trust You?: Explaining the Predictions of Any Classifier." In Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining (KDD 2016). ACM, New York, NY, USA, 1135-1144. DOI: https://doi.org/10.1145/2939672.2939778
 
 
 # Your turn

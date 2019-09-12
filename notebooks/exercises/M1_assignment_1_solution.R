@@ -1,19 +1,18 @@
 #### SDS exercise 1
 
 ## Date: Aug-05-2019
+rm(list=ls())
 
 #### Load packages
-
     library(tidyverse)
-    library(data.table)
     library(lubridate)
 
 
 #### Load dataset
 
-    trips <- data.table::fread("https://github.com/SDS-AAU/M1-2019/raw/master/data/trips.csv")
-    people <- data.table::fread("https://github.com/SDS-AAU/M1-2019/raw/master/data/people.csv")
-    country <- data.table::fread("https://github.com/SDS-AAU/M1-2019/raw/master/data/countrylist.csv")
+    trips <- read_csv("https://github.com/SDS-AAU/M1-2019/raw/master/data/trips.csv")
+    people <- read_csv("https://github.com/SDS-AAU/M1-2019/raw/master/data/people.csv")
+    country <- read_csv("https://github.com/SDS-AAU/M1-2019/raw/master/data/countrylist.csv")
 
     glimpse(trips)
     glimpse(people)

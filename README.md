@@ -53,12 +53,11 @@
 # Further Resources
 
 ## Asignments
-* Assignment 1
-
+* [Assignment 1](https://github.com/SDS-AAU/M1-2019/raw/master/notebooks/assignments/M1_assignment1.pdf)
     * Solution (py): [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/180PbNAfJyeo-N-bJul77J4Mz0lkIY7wW#offline=true&sandboxMode=true) 
     * Solution (R): [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/assignments/M1_assignment_1_solution_R.ipynb#offline=true&sandboxMode=true) 
 
-* Assignment 2: [Download PDF](https://github.com/SDS-AAU/M1-2019/raw/master/data/SDS%20M1%20Assignment%202.pdf)
+* [Assignment 2](https://github.com/SDS-AAU/M1-2019/raw/master/data/SDS%20M1%20Assignment%202.pdf)
 
 ## Tutorials & Knowledge
 

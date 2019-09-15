@@ -45,9 +45,8 @@
 ### [Supervised ML: Introduction (R)](https://raw.githack.com/SDS-AAU/M1-2019/master/notebooks/M1_7_supervised_ml.html)                            [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/M1_7_supervised_ml.ipynb#offline=true&sandboxMode=true)
 * Exercises
 
-    * Exercise 1: Wine Classification [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/exercises/M1_7_supervised_ml_ex1.ipynb#offline=true&sandboxMode=true)
     
-### Supervised ML: Live coding (python) (under development) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-ImD0HTcwAO-hJ1h9Y0uogMoZWB1rCIL#offline=true&sandboxMode=true)
+### Supervised ML: Live coding (python - annotated) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SDS-AAU/M1-2019/blob/master/notebooks/M1_Supervised_Python.ipynb#offline=true&sandboxMode=true)
     
     
 # Further Resources
